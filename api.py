@@ -30,4 +30,4 @@ def SV_calc(player_num, taskUtilityFunc, **kwargs):
         setattr(args, key, value)
 
     shap = Shapley(player_num, taskUtilityFunc, args)
-    shap.CalSV()
+    return shap.CalSV()

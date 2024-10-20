@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 import random
 import math
@@ -16,14 +15,14 @@ warnings.filterwarnings('ignore')
 
 
 class Shapley():
-    def __init__(self, players, taskUtilityFunc, args, targetedplayer_id=None):
+    def __init__(self, player_num, taskUtilityFunc, args, targetedplayer_id=None):
         self.args = args
 
-        self.task = args.task
-        self.players = players
+        # self.task = args.task
+        self.player_num = player_num
         self.targetedplayer_id = (targetedplayer_id
                                   if targetedplayer_id != None
-                                  else range(len(players)))
+                                  else range(player_num))
         self.utilityComputation = taskUtilityFunc
 
         # utility setting
@@ -31,9 +30,9 @@ class Shapley():
 
         # SV settings
         self.SV = dict([(player_id, 0.0)
-                        for player_id in range(len(self.players))])
+                        for player_id in range(self.player_num)])
         self.SV_var = dict([(player_id, [])
-                            for player_id in range(len(self.players))])
+                            for player_id in range(self.player_num)])
         # SV computation method's components
         self.base_compFunc = args.base_compFunc
         self.sampling_strategy = args.sampling_strategy
@@ -53,16 +52,16 @@ class Shapley():
         self.num_utility_comp = 0
         self.timeCost_per_utility_comp = []
 
-    def Exact(self, truncation=False):
+    """def Exact(self, truncation=False):
         self.SV = dict([(player_id, 0.0)
-                        for player_id in range(len(self.players))])
+                        for player_id in range(self.player_num)])
 
         for player_id, player in enumerate(self.players):
             print('calculating SV for player %s...' % player_id)
             self.SV[player_id] = 0.0
             # tmp_playerSet = self.players[:player_id] + self.players[player_id+1:]
             tmp_playerSet = list(range(player_id)) + \
-                list(range(player_id+1, len(self.players)))
+                list(range(player_id+1, self.player_num))
             for subset_size in range(len(tmp_playerSet)):
                 tmpSum = 0.0
                 tmpCount = 0
@@ -82,7 +81,7 @@ class Shapley():
                     tmpSum += aft_addition - bef_addition
                     tmpCount += 1
                 self.SV[player_id] += tmpSum / tmpCount
-            self.SV[player_id] /= len(self.players)
+            self.SV[player_id] /= self.player_num"""
 
     def truncation(self, truncation, bef_addition):
         if truncation == False:
@@ -111,6 +110,28 @@ class Shapley():
             selected_players = np.random.choice(
                 range(N), int(k), replace=False)
         return selected_players
+
+    def sampling(self, sampling_strategy, iter_time,
+                 num_players, scanned_permutations):
+        permutation = list(range(num_players))
+        if sampling_strategy == 'antithetic':
+            if iter_time % 2 == 1:
+                permutation = self.generateRandomPermutation(
+                    permutation, scanned_permutations)
+            else:
+                # antithetic sampling (also called paired sampling)
+                permutation = list(reversed(permutation))
+        elif sampling_strategy == 'stratified':
+            if iter_time % num_players == 1:
+                permutation = self.generateRandomPermutation(
+                    permutation, scanned_permutations)
+            else:
+                # stratified sampling
+                permutation = permutation[-1:] + permutation[:-1]
+        else:
+            permutation = self.generateRandomPermutation(
+                permutation, scanned_permutations)
+        return permutation
 
     def PlayerIteration(self, order, player_id, permutation, iter_time,
                         truncation, gradient_approximation, testSampleSkip,
@@ -163,32 +184,15 @@ class Shapley():
 
         # Monte Carlo sampling
         self.SV = dict([(player_id, 0.0)
-                        for player_id in range(len(self.players))])
+                        for player_id in range(self.player_num)])
         convergence = False
         iter_time = 0
-        permutation = list(range(len(self.players)))
         scanned_permutations = set()
         convergence_diff_records = list()
         while not convergence:
             iter_time += 1
-            if sampling_strategy == 'antithetic':
-                if iter_time % 2 == 1:
-                    permutation = self.generateRandomPermutation(
-                        permutation, scanned_permutations)
-
-                else:
-                    # antithetic sampling (also called paired sampling)
-                    permutation = list(reversed(permutation))
-            elif sampling_strategy == 'stratified':
-                if iter_time % len(self.players) == 1:
-                    permutation = self.generateRandomPermutation(
-                        permutation, scanned_permutations)
-                else:
-                    # stratified sampling
-                    permutation = permutation[-1:] + permutation[:-1]
-            else:
-                permutation = self.generateRandomPermutation(
-                    permutation, scanned_permutations)
+            permutation = self.sampling(sampling_strategy, iter_time,
+                                        self.player_num, scanned_permutations)
             scanned_permutations.add(",".join(map(str, permutation)))
 
             print('\n Monte Carlo iteration %s: ' % iter_time, permutation)
@@ -218,7 +222,7 @@ class Shapley():
                     thread.join()
                     print('Done %s/%s...' % (order, len(permutation)))
 
-            while len(convergence_diff) != len(self.players):
+            while len(convergence_diff) != self.player_num:
                 time.sleep(3)
             print('Monte Carlo iteration %s done ' % iter_time)
             convergence_diff_records.append(
@@ -233,10 +237,22 @@ class Shapley():
             print("Current average time cost of a single time of utility computation: ",
                   np.average(self.timeCost_per_utility_comp))
 
+            if sampling_strategy == 'stratified' and \
+                    iter_time % self.player_num != 0:
+                # ensure for each player that the number of permutation
+                # samples in each stratum is the same
+                continue
+
+            if sampling_strategy == 'antithetic' and \
+                    iter_time % 2 != 0:
+                # ensure the correctness for paired sampling
+                continue
+
             if len(scanned_permutations) >= min(self.args.scannedIter_maxNum,
-                                                math.factorial(len(self.players))):
+                                                math.factorial(self.player_num)):
                 convergence = True
-            else:
+            elif self.base_compFunc == 'MC':
+                # if base_compFunc is exact, then never converge
                 # consider as convergence only when
                 # convergence_diff values in the latest five rounds
                 # are all smaller than the given threshold
@@ -252,10 +268,10 @@ class Shapley():
         for m in range(M):
             # generate Bernoulli random numbers independently
             I_mq = np.random.binomial(1, q,
-                                      size=(len(self.players)))
+                                      size=(self.player_num))
             # print(I_mq)
             subset = []
-            for player_id in range(len(self.players)):
+            for player_id in range(self.player_num):
                 if I_mq[player_id] == 1:
                     subset.append(player_id)
             # utility before adding the targeted player
@@ -265,7 +281,7 @@ class Shapley():
             # self.num_utility_comp += 1
             # self.timeCost_per_utility_comp.append(timeCost)
 
-            for player_id in range(len(self.players)):
+            for player_id in range(self.player_num):
                 if I_mq[player_id] == 1:
                     # needed according to the original paper
                     results.put((player_id, 0, 0))
@@ -288,7 +304,7 @@ class Shapley():
             # antithetic sampling
             I_mq = 1-I_mq
             subset = []
-            for player_id in range(len(self.players)):
+            for player_id in range(self.player_num):
                 if I_mq[player_id] == 1:
                     subset.append(player_id)
             # utility before adding the targeted player
@@ -298,7 +314,7 @@ class Shapley():
             # self.num_utility_comp += 1
             # self.timeCost_per_utility_comp.append(timeCost)
 
-            for player_id in range(len(self.players)):
+            for player_id in range(self.player_num):
                 if I_mq[player_id] == 1:
                     # needed according to the original paper
                     results.put((player_id, 0, 0))
@@ -322,7 +338,7 @@ class Shapley():
         # multilinear extension
         # refer to paper: A Multilinear Sampling Algorithm to Estimate Shapley Values
         self.SV = dict([(player_id, 0.0)
-                        for player_id in range(len(self.players))])
+                        for player_id in range(self.player_num)])
 
         convergence_diff_records = []
         convergence = False
@@ -360,8 +376,8 @@ class Shapley():
             for thread in threads:
                 thread.join()
 
-            e = np.zeros(len(self.players))
-            num_comp = np.zeros(len(self.players))
+            e = np.zeros(self.player_num)
+            num_comp = np.zeros(self.player_num)
             while not results.empty():
                 (player_id, delta_utility, timeCost) = results.get()
                 if player_id != -1:
@@ -377,12 +393,12 @@ class Shapley():
                     (e[player_id] / num_comp[player_id] - self.SV[player_id]) /
                     (self.SV[player_id] + 10**(-12))
                 ))
-                for player_id in range(len(self.players))])
+                for player_id in range(self.player_num)])
             convergence_diff_records.append(
                 sum(convergence_diff.values())/len(convergence_diff))
             self.SV = dict([(player_id, e[player_id] / num_comp[player_id])
-                            for player_id in range(len(self.players))])
-            for player_id in range(len(self.players)):
+                            for player_id in range(self.player_num)])
+            for player_id in range(self.player_num):
                 self.SV_var[player_id].append(self.SV[player_id])
             print(
                 'Multilinear extension iteration (with MLE_interval_%s) done ' % MLE_interval)
@@ -412,9 +428,9 @@ class Shapley():
            testSampleSkip=False):
 
         self.SV = dict([(player_id, 0.0)
-                        for player_id in range(len(self.players))])
+                        for player_id in range(self.player_num)])
         # group testing
-        N = len(self.players)
+        N = self.player_num
         Z = 2 * sum([1/k for k in range(1, N)])
         q_k = [1/Z*(1/k+1/(N-k)) for k in range(1, N)]
 
@@ -439,7 +455,7 @@ class Shapley():
             elif sampling_strategy == 'stratified':
                 pass
                 # stratified sampling
-                # k = q_k[iter_time%len(self.players)-1]
+                # k = q_k[iter_time%self.player_num-1]
                 # selected_players = self.generateRandomSubset(
                 #    N, k, scanned_coalitions)
 
@@ -553,12 +569,12 @@ class Shapley():
                     (result[player_id] - self.SV[player_id]) /
                     (self.SV[player_id] + 10**(-12))
                 ))
-                for player_id in range(len(self.players))])
+                for player_id in range(self.player_num)])
             convergence_diff_records.append(
                 sum(convergence_diff.values())/len(convergence_diff))
             self.SV = dict([(player_id, result[player_id])
-                            for player_id in range(len(self.players))])
-            for player_id in range(len(self.players)):
+                            for player_id in range(self.player_num)])
+            for player_id in range(self.player_num):
                 self.SV_var[player_id].append(self.SV[player_id])
 
             print('Group testing iteration %s done!' % iter_time)
@@ -571,8 +587,8 @@ class Shapley():
             print("Current average time cost of a single time of utility computation: ",
                   np.average(self.timeCost_per_utility_comp))
 
-            # math.factorial(len(self.players)):
-            if len(scanned_coalitions) >= 2**len(self.players):
+            # math.factorial(self.player_num):
+            if len(scanned_coalitions) >= 2**self.player_num:
                 convergence = True
             else:
                 # consider as convergence only when
@@ -589,41 +605,25 @@ class Shapley():
            testSampleSkip=False):
 
         self.SV = dict([(player_id, 0.0)
-                        for player_id in range(len(self.players))])
+                        for player_id in range(self.player_num)])
         # compressive permutation sampling
         # sample a Bernoulli matirc A
-        N = len(self.players)
+        N = self.player_num
         A = np.random.binomial(1, 0.5,
                                size=(self.args.num_measurement, N))
         A = 1/np.sqrt(self.args.num_measurement)*(2*A - 1)
         y = dict([(m, []) for m in range(self.args.num_measurement)])
         # np.zeros(self.args.num_measurement,
-        #         math.factorial(len(self.players)))
+        #         math.factorial(self.player_num))
 
         convergence = False
         iter_time = 0
-        permutation = list(range(N))
         scanned_permutations = set()
         convergence_diff_records = []
         while not convergence:
             iter_time += 1
-            if sampling_strategy == 'antithetic':
-                if iter_time % 2 == 1:
-                    permutation = self.generateRandomPermutation(
-                        permutation, scanned_permutations)
-                else:
-                    # antithetic sampling (also called paired sampling)
-                    permutation = list(reversed(permutation))
-            elif sampling_strategy == 'stratified':
-                if iter_time % len(self.players) == 1:
-                    permutation = self.generateRandomPermutation(
-                        permutation, scanned_permutations)
-                else:
-                    # stratified sampling
-                    permutation = permutation[-1:] + permutation[:-1]
-            else:
-                permutation = self.generateRandomPermutation(
-                    permutation, scanned_permutations)
+            permutation = self.sampling(sampling_strategy, iter_time,
+                                        self.player_num, scanned_permutations)
             scanned_permutations.add(",".join(map(str, permutation)))
 
             print('\n Compressive permutation sampling iteration %s: ' % iter_time,
@@ -643,7 +643,7 @@ class Shapley():
                         (order > 0 and order % self.args.num_parallelThreads == 0):
                     thread.join()
                     print('Done %s/%s...' % (order, len(permutation)))
-            while len(phi_t) != len(self.players):
+            while len(phi_t) != self.player_num:
                 time.sleep(3)
 
             for m in range(self.args.num_measurement):
@@ -658,7 +658,7 @@ class Shapley():
             for m in range(len(y)):
                 y_mean[m] = 1/iter_time * \
                     sum(y[m][:iter_time])  # sum(y[m,:iter_time])
-            sv_mean = self.taskTotalUtility/len(self.players)
+            sv_mean = self.taskTotalUtility/self.player_num
             def fun(sv_variance): return np.linalg.norm(sv_variance, ord=1)
 
             cons = (
@@ -677,11 +677,11 @@ class Shapley():
                     (sv_mean+sv_variance[player_id]-self.SV[player_id]) /
                     (self.SV[player_id] + 10**(-12))
                 ))
-                for player_id in range(len(self.players))])
+                for player_id in range(self.player_num)])
             convergence_diff_records.append(
                 sum(convergence_diff.values())/len(convergence_diff))
             self.SV = dict([(player_id, sv_mean+sv_variance[player_id])
-                            for player_id in range(len(self.players))])
+                            for player_id in range(self.player_num)])
 
             print('Compressive permutation sampling iteration %s done!' % iter_time)
             print("Current convergence_diff: ", convergence_diff.values())
@@ -693,7 +693,7 @@ class Shapley():
             print("Current average time cost of a single time of utility computation: ",
                   np.average(self.timeCost_per_utility_comp))
 
-            if len(scanned_permutations) >= math.factorial(len(self.players)):
+            if len(scanned_permutations) >= math.factorial(self.player_num):
                 convergence = True
             else:
                 # consider as convergence only when
@@ -717,9 +717,9 @@ class Shapley():
            testSampleSkip=False):
         # regression-based
         self.SV = dict([(player_id, 0.0)
-                        for player_id in range(len(self.players))])
+                        for player_id in range(self.player_num)])
 
-        d = len(self.players)
+        d = self.player_num
         A = np.zeros((d, d))
         for i in range(d):
             for j in range(d):
@@ -737,28 +737,12 @@ class Shapley():
         convergence = False
         iter_time = 0
         convergence_diff_records = []
-        permutation = list(range(d))
         while not convergence:
             iter_time += 1
             print('\n Regression iteration %s start! ' % iter_time)
 
-            if sampling_strategy == 'antithetic':
-                if iter_time % 2 == 1:
-                    permutation = self.generateRandomPermutation(
-                        permutation, scanned_permutations)
-                else:
-                    # antithetic sampling (also called paired sampling)
-                    permutation = list(reversed(permutation))
-            elif sampling_strategy == 'stratified':
-                if iter_time % len(self.players) == 1:
-                    permutation = self.generateRandomPermutation(
-                        permutation, scanned_permutations)
-                else:
-                    # stratified sampling
-                    permutation = permutation[-1:] + permutation[:-1]
-            else:
-                permutation = self.generateRandomPermutation(
-                    permutation, scanned_permutations)
+            permutation = self.sampling(sampling_strategy, iter_time,
+                                        d, scanned_permutations)
             scanned_permutations.add(",".join(map(str, permutation)))
             # speed up by multiple threads
             z_i = []
@@ -811,12 +795,12 @@ class Shapley():
                     (beta[player_id]-self.SV[player_id]) /
                     (self.SV[player_id] + 10**(-12))
                 ))
-                for player_id in range(len(self.players))])
+                for player_id in range(self.player_num)])
             convergence_diff_records.append(
                 sum(convergence_diff.values())/len(convergence_diff))
             self.SV = dict([(player_id, beta[player_id])
-                            for player_id in range(len(self.players))])
-            for player_id in range(len(self.players)):
+                            for player_id in range(self.player_num)])
+            for player_id in range(self.player_num):
                 self.SV_var[player_id].append(self.SV[player_id])
 
             print('Regression iteration %s done ' % iter_time)
@@ -829,7 +813,7 @@ class Shapley():
             print("Current average time cost of a single time of utility computation: ",
                   np.average(self.timeCost_per_utility_comp))
 
-            if len(scanned_permutations) >= math.factorial(len(self.players)):
+            if len(scanned_permutations) >= math.factorial(self.player_num):
                 convergence = True
             else:
                 # consider as convergence only when
@@ -842,7 +826,7 @@ class Shapley():
                         break
 
     def computeAllSubsetUtility(self):
-        N = len(self.players)
+        N = self.player_num
         exclude_list = []
         for k in range(2, N+1):
             num_itered_subsets = len(exclude_list)
@@ -867,7 +851,17 @@ class Shapley():
                 if len(exclude_list) - num_itered_subsets >= finish_thresholdNumber:
                     break
 
+    def problemScale_statistics(self):
+        print('【Problem Scale】')
+        print('Total number of players: ', self.player_num)
+        print('Total number of utility computations for exact computation:',
+              float(self.player_num * 2**(self.player_num-1)))
+        print('Total number of permutation sampling for exact computation:',
+              float(math.factorial(self.player_num)))
+
     def CalSV(self):
+        self.problemScale_statistics()
+
         # reset rumtime records
         self.num_utility_comp = 0
         self.timeCost_per_utility_comp = []
@@ -877,7 +871,7 @@ class Shapley():
         # setting the convergence conditions in MC
         #    self.Exact()
         # el
-        if self.base_compFunc == 'classical':
+        if self.base_compFunc in ['exact', 'MC']:
             base_compFunc = self.MC
         elif self.base_compFunc == 'RE':
             base_compFunc = self.RE
@@ -892,7 +886,7 @@ class Shapley():
 
         if self.truncationFlag or self.base_compFunc in ['RE', 'GT', 'CP']:
             self.taskTotalUtility, _ = self.utilityComputation(
-                range(len(self.players)),
+                range(self.player_num),
                 self.gradient_approximation, self.testSampleSkip)
             print('The task\'s total utility: ', self.taskTotalUtility)
 
