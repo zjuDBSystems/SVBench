@@ -34,7 +34,7 @@ class Shapley():
         self.SV_var = dict([(player_id, [])
                             for player_id in range(self.player_num)])
         # SV computation method's components
-        self.base_compFunc = args.base_compFunc
+        self.method = args.method
         self.sampling_strategy = args.sampling_strategy
         self.truncationFlag = args.truncation
         self.gradient_approximation = args.gradient_approximation
@@ -251,8 +251,8 @@ class Shapley():
             if len(scanned_permutations) >= min(self.args.scannedIter_maxNum,
                                                 math.factorial(self.player_num)):
                 convergence = True
-            elif self.base_compFunc == 'MC':
-                # if base_compFunc is exact, then never converge
+            elif self.method == 'MC':
+                # if method is exact, then never converge
                 # consider as convergence only when
                 # convergence_diff values in the latest five rounds
                 # are all smaller than the given threshold
@@ -871,26 +871,26 @@ class Shapley():
         # setting the convergence conditions in MC
         #    self.Exact()
         # el
-        if self.base_compFunc in ['exact', 'MC']:
+        if self.method in ['exact', 'MC']:
             base_compFunc = self.MC
-        elif self.base_compFunc == 'RE':
+        elif self.method == 'RE':
             base_compFunc = self.RE
-        elif self.base_compFunc == 'MLE':
+        elif self.method == 'MLE':
             base_compFunc = self.MLE
-        elif self.base_compFunc == 'GT':
+        elif self.method == 'GT':
             base_compFunc = self.GT
-        elif self.base_compFunc == 'CP':
+        elif self.method == 'CP':
             base_compFunc = self.CP
         else:
             print("Unknown computation method!!")
 
-        if self.truncationFlag or self.base_compFunc in ['RE', 'GT', 'CP']:
+        if self.truncationFlag or self.method in ['RE', 'GT', 'CP']:
             self.taskTotalUtility, _ = self.utilityComputation(
                 range(self.player_num),
                 self.gradient_approximation, self.testSampleSkip)
             print('The task\'s total utility: ', self.taskTotalUtility)
 
-        if self.base_compFunc == 'RE':
+        if self.method == 'RE':
             self.emptySet_utility, _ = self.utilityComputation(
                 [], self.gradient_approximation, self.testSampleSkip)
             print('The task\'s emptySet utility: ', self.emptySet_utility)

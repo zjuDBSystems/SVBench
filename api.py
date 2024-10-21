@@ -6,7 +6,7 @@ import numpy as np
 args = {
     # SV parameters
     'num_parallelThreads': 1,
-    'base_compFunc': 'MC',
+    'method': 'MC',
     'convergence_threshold': 0.5,
     'scannedIter_maxNum': np.inf,
     'MLE_maxInterval': 10000,
