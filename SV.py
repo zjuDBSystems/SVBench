@@ -37,8 +37,6 @@ class Shapley():
         self.method = args.method
         self.sampling_strategy = args.sampling_strategy
         self.truncationFlag = args.truncation
-        self.gradient_approximation = args.gradient_approximation
-        self.testSampleSkip = args.testSampleSkip
         self.privacy_protection_measure = args.privacy_protection_measure
         self.privacy_protection_level = args.privacy_protection_level
 
@@ -51,37 +49,6 @@ class Shapley():
         self.startTime = 0
         self.num_utility_comp = 0
         self.timeCost_per_utility_comp = []
-
-    """def Exact(self, truncation=False):
-        self.SV = dict([(player_id, 0.0)
-                        for player_id in range(self.player_num)])
-
-        for player_id, player in enumerate(self.players):
-            print('calculating SV for player %s...' % player_id)
-            self.SV[player_id] = 0.0
-            # tmp_playerSet = self.players[:player_id] + self.players[player_id+1:]
-            tmp_playerSet = list(range(player_id)) + \
-                list(range(player_id+1, self.player_num))
-            for subset_size in range(len(tmp_playerSet)):
-                tmpSum = 0.0
-                tmpCount = 0
-                for subset_idx, subset in enumerate(
-                        itertools.combinations(tmp_playerSet, subset_size)):
-                    print('(Player %s Coalition Size %s/%s) sub-coalition No.%s/%s...' % (
-                        player_id, subset_size, len(tmp_playerSet),
-                        subset_idx+1, comb(len(tmp_playerSet), subset_size)
-                    ))
-                    # utility before adding the targeted player
-                    bef_addition = self.utilityComputation(subset)
-                    # utility after adding the targeted player
-                    aft_addition = self.utilityComputation(
-                        list(subset)+[player_id])
-
-                    # gain in utility
-                    tmpSum += aft_addition - bef_addition
-                    tmpCount += 1
-                self.SV[player_id] += tmpSum / tmpCount
-            self.SV[player_id] /= self.player_num"""
 
     def truncation(self, truncation, bef_addition):
         if truncation == False:
@@ -134,14 +101,12 @@ class Shapley():
         return permutation
 
     def PlayerIteration(self, order, player_id, permutation, iter_time,
-                        truncation, gradient_approximation, testSampleSkip,
-                        convergence_diff, diff_mode='relative'):
+                        truncation, convergence_diff, diff_mode='relative'):
         startTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # lock.acquire()
         subset = permutation[:order]
         # utility before adding the targeted player
-        bef_addition, timeCost = self.utilityComputation(
-            subset, gradient_approximation, testSampleSkip)
+        bef_addition, timeCost = self.utilityComputation(subset)
         if timeCost > 0:
             self.num_utility_comp += 1
             self.timeCost_per_utility_comp.append(timeCost)
@@ -151,8 +116,7 @@ class Shapley():
         else:
             # utility after adding the targeted player
             aft_addition, timeCost = self.utilityComputation(
-                list(subset)+[player_id],
-                gradient_approximation, testSampleSkip)
+                list(subset)+[player_id])
             if timeCost > 0:
                 self.num_utility_comp += 1
                 self.timeCost_per_utility_comp.append(timeCost)
@@ -178,9 +142,7 @@ class Shapley():
         else:
             convergence_diff[player_id] = diff
 
-    def MC(self, sampling_strategy='random',
-           truncation=False, gradient_approximation=False,
-           testSampleSkip=False):
+    def MC(self, sampling_strategy='random', truncation=False):
 
         # Monte Carlo sampling
         self.SV = dict([(player_id, 0.0)
@@ -195,7 +157,7 @@ class Shapley():
                                         self.player_num, scanned_permutations)
             scanned_permutations.add(",".join(map(str, permutation)))
 
-            print('\n Monte Carlo iteration %s: ' % iter_time, permutation)
+            # print('\n Monte Carlo iteration %s: ' % iter_time, permutation)
             # speed up by multiple threads
             convergence_diff = dict()
             for order, player_id in enumerate(permutation):
@@ -212,9 +174,7 @@ class Shapley():
                 thread = threading.Thread(
                     target=self.PlayerIteration,
                     args=(order, player_id, permutation,
-                          iter_time, truncation,
-                          gradient_approximation, testSampleSkip,
-                          convergence_diff))
+                          iter_time, truncation, convergence_diff))
                 thread.daemon = True
                 thread.start()
                 if self.args.num_parallelThreads <= 1 or\
@@ -248,23 +208,25 @@ class Shapley():
                 # ensure the correctness for paired sampling
                 continue
 
-            if len(scanned_permutations) >= min(self.args.scannedIter_maxNum,
-                                                math.factorial(self.player_num)):
-                convergence = True
+            max_iternum = math.factorial(self.player_num)
+            if self.method == 'exact':
+                if len(scanned_permutations) >= max_iternum:
+                    convergence = True
             elif self.method == 'MC':
-                # if method is exact, then never converge
-                # consider as convergence only when
-                # convergence_diff values in the latest five rounds
-                # are all smaller than the given threshold
-                convergence = True
-                for convergence_diff in convergence_diff_records[-5:]:
-                    if convergence_diff > self.args.convergence_threshold:
-                        convergence = False
-                        break
+                if len(scanned_permutations) >= min(self.args.scannedIter_maxNum, max_iternum):
+                    convergence = True
+                else:
+                    # consider as convergence only when
+                    # convergence_diff values in the latest five rounds
+                    # are all smaller than the given threshold
+                    convergence = True
+                    for convergence_diff in convergence_diff_records[-5:]:
+                        if convergence_diff > self.args.convergence_threshold:
+                            convergence = False
+                            break
 
     def MLE_parallelableThread(self, q, M, sampling_strategy='random',
-                               truncation=False, gradient_approximation=False,
-                               testSampleSkip=False, results=None):
+                               truncation=False, results=None):
         for m in range(M):
             # generate Bernoulli random numbers independently
             I_mq = np.random.binomial(1, q,
@@ -275,8 +237,7 @@ class Shapley():
                 if I_mq[player_id] == 1:
                     subset.append(player_id)
             # utility before adding the targeted player
-            bef_addition, timeCost = self.utilityComputation(
-                subset, gradient_approximation, testSampleSkip)
+            bef_addition, timeCost = self.utilityComputation(subset)
             results.put((-1, -1, timeCost))
             # self.num_utility_comp += 1
             # self.timeCost_per_utility_comp.append(timeCost)
@@ -292,8 +253,7 @@ class Shapley():
                 else:
                     # utility after adding the targeted player
                     aft_addition, timeCost = self.utilityComputation(
-                        list(subset)+[player_id],
-                        gradient_approximation, testSampleSkip)
+                        list(subset)+[player_id])
                     # self.num_utility_comp += 1
                     # self.timeCost_per_utility_comp.append(timeCost)
                 results.put((player_id, aft_addition-bef_addition, timeCost))
@@ -308,8 +268,7 @@ class Shapley():
                 if I_mq[player_id] == 1:
                     subset.append(player_id)
             # utility before adding the targeted player
-            bef_addition, timeCost = self.utilityComputation(
-                subset, gradient_approximation, testSampleSkip)
+            bef_addition, timeCost = self.utilityComputation(subset)
             results.put((-1, -1, timeCost))
             # self.num_utility_comp += 1
             # self.timeCost_per_utility_comp.append(timeCost)
@@ -325,16 +284,13 @@ class Shapley():
                 else:
                     # utility after adding the targeted player
                     aft_addition, timeCost = self.utilityComputation(
-                        list(subset)+[player_id],
-                        gradient_approximation, testSampleSkip)
+                        list(subset)+[player_id])
                     # self.num_utility_comp += 1
                     # self.timeCost_per_utility_comp.append(timeCost)
                 results.put((player_id, aft_addition-bef_addition, timeCost))
                 # e[player_id] += aft_addition-bef_addition
 
-    def MLE(self, sampling_strategy='random',
-            truncation=False, gradient_approximation=False,
-            testSampleSkip=False):
+    def MLE(self, sampling_strategy='random', truncation=False):
         # multilinear extension
         # refer to paper: A Multilinear Sampling Algorithm to Estimate Shapley Values
         self.SV = dict([(player_id, 0.0)
@@ -361,8 +317,7 @@ class Shapley():
                 thread = threading.Thread(
                     target=self.MLE_parallelableThread,
                     args=(iter_/MLE_interval, M,
-                          sampling_strategy, truncation, gradient_approximation,
-                          testSampleSkip, results))
+                          sampling_strategy, truncation, results))
                 thread.daemon = True
                 thread.start()
                 if self.args.num_parallelThreads <= 1 or\
@@ -423,9 +378,7 @@ class Shapley():
                         convergence = False
                         break
 
-    def GT(self, sampling_strategy='random',
-           truncation=False, gradient_approximation=False,
-           testSampleSkip=False):
+    def GT(self, sampling_strategy='random', truncation=False):
 
         self.SV = dict([(player_id, 0.0)
                         for player_id in range(self.player_num)])
@@ -466,9 +419,7 @@ class Shapley():
                 ",".join(map(str, sorted(selected_players))))
 
             # compute utility
-            value, timeCost = self.utilityComputation(
-                selected_players,
-                gradient_approximation, testSampleSkip)
+            value, timeCost = self.utilityComputation(selected_players)
             utilities.append(
                 ([int(player_id in selected_players)
                   for player_id in range(N)],
@@ -600,9 +551,7 @@ class Shapley():
                         convergence = False
                         break
 
-    def CP(self, sampling_strategy='random',
-           truncation=False, gradient_approximation=False,
-           testSampleSkip=False):
+    def CP(self, sampling_strategy='random', truncation=False):
 
         self.SV = dict([(player_id, 0.0)
                         for player_id in range(self.player_num)])
@@ -633,10 +582,7 @@ class Shapley():
             for order, player_id in enumerate(permutation):
                 thread = threading.Thread(
                     target=self.PlayerIteration,
-                    args=(order, player_id, permutation,
-                          iter_time, truncation,
-                          gradient_approximation, testSampleSkip,
-                          phi_t, 'utility_diff'))
+                    args=(order, player_id, permutation, iter_time, truncation, phi_t, 'utility_diff'))
                 thread.daemon = True
                 thread.start()
                 if self.args.num_parallelThreads <= 1 or\
@@ -706,15 +652,10 @@ class Shapley():
                         break
 
     def RE_parallelableThread(self, order, selected_players,
-                              truncation=False, gradient_approximation=False,
-                              testSampleSkip=False, results=None):
-        results.put((order,
-                     self.utilityComputation(selected_players,
-                                             gradient_approximation, testSampleSkip)))
+                              truncation=False, results=None):
+        results.put((order, self.utilityComputation(selected_players)))
 
-    def RE(self, sampling_strategy='random',
-           truncation=False, gradient_approximation=False,
-           testSampleSkip=False):
+    def RE(self, sampling_strategy='random', truncation=False):
         # regression-based
         self.SV = dict([(player_id, 0.0)
                         for player_id in range(self.player_num)])
@@ -753,9 +694,7 @@ class Shapley():
 
                 thread = threading.Thread(
                     target=self.RE_parallelableThread,
-                    args=(order, permutation[:order+1], truncation,
-                          gradient_approximation, testSampleSkip,
-                          results))
+                    args=(order, permutation[:order+1], truncation, results))
                 thread.daemon = True
                 thread.start()
                 if self.args.num_parallelThreads <= 1 or\
@@ -842,9 +781,7 @@ class Shapley():
                 exclude_list.append(
                     ",".join(map(str, sorted(selected_players))))
 
-                self.utilityComputation(selected_players,
-                                        self.gradient_approximation,
-                                        self.testSampleSkip)
+                self.utilityComputation(selected_players)
                 print('Progress %s/%s with players %s...' % (
                     len(exclude_list)-num_itered_subsets,
                     finish_thresholdNumber, exclude_list[-1]))
@@ -886,13 +823,11 @@ class Shapley():
 
         if self.truncationFlag or self.method in ['RE', 'GT', 'CP']:
             self.taskTotalUtility, _ = self.utilityComputation(
-                range(self.player_num),
-                self.gradient_approximation, self.testSampleSkip)
+                range(self.player_num))
             print('The task\'s total utility: ', self.taskTotalUtility)
 
         if self.method == 'RE':
-            self.emptySet_utility, _ = self.utilityComputation(
-                [], self.gradient_approximation, self.testSampleSkip)
+            self.emptySet_utility, _ = self.utilityComputation([])
             print('The task\'s emptySet utility: ', self.emptySet_utility)
 
         self.startTime = time.time()
@@ -900,9 +835,7 @@ class Shapley():
             self.computeAllSubsetUtility()
 
         base_compFunc(sampling_strategy=self.sampling_strategy,
-                      truncation=self.truncationFlag,
-                      gradient_approximation=self.gradient_approximation,
-                      testSampleSkip=self.testSampleSkip)
+                      truncation=self.truncationFlag)
         self.SV = privacy_protect(self.privacy_protection_measure,
                                   self.privacy_protection_level,
                                   self.SV, self.SV_var)

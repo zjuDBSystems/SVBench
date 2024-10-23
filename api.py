@@ -16,8 +16,6 @@ args = {
     'sampling_strategy': 'random',
     'truncation': False,
     'truncationThreshold': 0.01,
-    'gradient_approximation': False,
-    'testSampleSkip': False,
 
     # SV's privacy protection parameters
     'privacy_protection_measure': None,
