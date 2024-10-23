@@ -6,6 +6,8 @@ A cooperative game is composed of a player set and a utility function that defin
 
 Modeling DA tasks as cooperative games is the fundamental step for applying SV to those tasks. The key is to define the player and the utility according to the underlying purpose of applying SV. When users try to use SV to deal with DA tasks, they only need to define the player and provide corresponding utility computation methods and related parameters of the task to complete the call to SV4DA and obtain the results of SV calculation.
 
+[![Contributors](https://img.shields.io/github/contributors/DDDDDstar/SV4DA?color=3ba272)](https://github.com/DDDDDstar/SV4DA/graphs/contributors)
+
 ## Get Started
 
 To use SV4DA, you need the following steps:
@@ -31,7 +33,7 @@ For the `SV_valc` function call, there are three necessary parameters: `player_n
 ### Optional Parameters
 
 | Parameter |          Options or Scope          | Introduction                                                 | Default | Applicable Methods |
-| -------- | :------: | -------- | :------: | :------: |
+| :------: | :------: | -------- | :------: | :------: |
 |     sampling_strategy      | `random` `antithetic` `stratified` | Three sampling strategies of random sampling, antithetic sampling and stratified sampling are provided to reduce the approximate error. | `random` | `MC` `RE` `MLE` `GT` `CP` |
 | truncation | `True` `False` | Whether to truncate the unnecessary calculations of some marginal contributions in runtime of approximating SV. | `False` | `MC` `RE` `MLE` `CP` |
 | privacy_protection_measure | `DP` `QT` `DR` | The measure to protect privacy. Three methods of differential privacy(`DP`), quantization(`QT`) and dimension reduction(`DR`) are provided. | `None` | `exact` `MC` `RE` `MLE` `GT` `CP` |
