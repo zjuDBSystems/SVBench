@@ -6,7 +6,7 @@ A cooperative game is composed of a player set and a utility function that defin
 
 Modeling DA tasks as cooperative games is the fundamental step for applying SV to those tasks. The key is to define the player and the utility according to the underlying purpose of applying SV. When users try to use SV to deal with DA tasks, they only need to define the player and provide corresponding utility computation methods and related parameters of the task to complete the call to SV4DA and obtain the results of SV calculation.
 
-[![Contributors](https://img.shields.io/github/contributors/DDDDDstar/SV4DA?color=3ba272)](https://github.com/DDDDDstar/SV4DA/graphs/contributors)
+[![GitHub Actions Build](https://github.com/DDDDDstar/SV4DA/actions/workflows/codeql.yml/badge.svg)](https://github.com/DDDDDstar/SV4DA/actions/workflows/codeql.yml)[![Contributors](https://img.shields.io/github/contributors/DDDDDstar/SV4DA?color=3ba272)](https://github.com/DDDDDstar/SV4DA/graphs/contributors)
 
 ## Get Started
 
