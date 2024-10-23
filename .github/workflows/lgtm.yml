@@ -3,7 +3,7 @@ name: LGTM Check
 on:
   push:
     branches:
-      - test_for_lgtm
+      - main
 
 jobs:
   lgtm:
