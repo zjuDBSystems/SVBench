@@ -78,26 +78,48 @@ class Shapley():
                 range(N), int(k), replace=False)
         return selected_players
 
+    # def sampling(self, sampling_strategy, iter_time,
+    #              num_players, scanned_permutations):
+    #     permutation = list(range(num_players))
+    #     if sampling_strategy == 'antithetic':
+    #         if iter_time % 2 == 1:
+    #             permutation = self.generateRandomPermutation(
+    #                 permutation, scanned_permutations)
+    #         else:
+    #             # antithetic sampling (also called paired sampling)
+    #             permutation = list(reversed(permutation))
+    #     elif sampling_strategy == 'stratified':
+    #         if iter_time % num_players == 1:
+    #             permutation = self.generateRandomPermutation(
+    #                 permutation, scanned_permutations)
+    #         else:
+    #             # stratified sampling
+    #             permutation = permutation[-1:] + permutation[:-1]
+    #     else:
+    #         permutation = self.generateRandomPermutation(
+    #             permutation, scanned_permutations)
+    #     return permutation
+
     def sampling(self, sampling_strategy, iter_time,
-                 num_players, scanned_permutations):
-        permutation = list(range(num_players))
+                 current_permutation, scanned_permutations):
         if sampling_strategy == 'antithetic':
             if iter_time % 2 == 1:
                 permutation = self.generateRandomPermutation(
-                    permutation, scanned_permutations)
+                    current_permutation, scanned_permutations)
             else:
                 # antithetic sampling (also called paired sampling)
-                permutation = list(reversed(permutation))
+                permutation = list(reversed(current_permutation))
         elif sampling_strategy == 'stratified':
-            if iter_time % num_players == 1:
+            if iter_time % len(current_permutation) == 1:
                 permutation = self.generateRandomPermutation(
-                    permutation, scanned_permutations)
+                    current_permutation, scanned_permutations)
             else:
                 # stratified sampling
-                permutation = permutation[-1:] + permutation[:-1]
+                permutation = current_permutation[-1:] + \
+                    current_permutation[:-1]
         else:
             permutation = self.generateRandomPermutation(
-                permutation, scanned_permutations)
+                current_permutation, scanned_permutations)
         return permutation
 
     def PlayerIteration(self, order, player_id, permutation, iter_time,
@@ -149,12 +171,13 @@ class Shapley():
                         for player_id in range(self.player_num)])
         convergence = False
         iter_time = 0
+        permutation = list(range(self.player_num))
         scanned_permutations = set()
         convergence_diff_records = list()
         while not convergence:
             iter_time += 1
             permutation = self.sampling(sampling_strategy, iter_time,
-                                        self.player_num, scanned_permutations)
+                                        permutation, scanned_permutations)
             scanned_permutations.add(",".join(map(str, permutation)))
 
             # print('\n Monte Carlo iteration %s: ' % iter_time, permutation)
@@ -567,12 +590,13 @@ class Shapley():
 
         convergence = False
         iter_time = 0
+        permutation = list(range(self.player_num))
         scanned_permutations = set()
         convergence_diff_records = []
         while not convergence:
             iter_time += 1
             permutation = self.sampling(sampling_strategy, iter_time,
-                                        self.player_num, scanned_permutations)
+                                        permutation, scanned_permutations)
             scanned_permutations.add(",".join(map(str, permutation)))
 
             print('\n Compressive permutation sampling iteration %s: ' % iter_time,
@@ -678,12 +702,13 @@ class Shapley():
         convergence = False
         iter_time = 0
         convergence_diff_records = []
+        permutation = list(range(self.player_num))
         while not convergence:
             iter_time += 1
             print('\n Regression iteration %s start! ' % iter_time)
 
             permutation = self.sampling(sampling_strategy, iter_time,
-                                        d, scanned_permutations)
+                                        permutation, scanned_permutations)
             scanned_permutations.add(",".join(map(str, permutation)))
             # speed up by multiple threads
             z_i = []
