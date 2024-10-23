@@ -1,7 +1,7 @@
 name: LGTM Check
 
 on:
-  pull_request:
+  push:
     branches:
       - test_for_lgtm
 
