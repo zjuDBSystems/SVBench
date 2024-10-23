@@ -1,0 +1,20 @@
+name: LGTM Check
+
+on:
+  pull_request:
+    branches:
+      - test_for_lgtm
+
+jobs:
+  lgtm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run LGTM
+        uses: lgtmco/lgtm-action@v1
+        with:
+          language: python
+          token: ${{ secrets.GITHUB_TOKEN }}
