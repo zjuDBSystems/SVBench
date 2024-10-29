@@ -1,4 +1,4 @@
-from SV import Shapley
+from shapley import Shapley
 import numpy as np
 
 
@@ -23,9 +23,9 @@ args = {
 }
 
 
-def SV_calc(player_num, taskUtilityFunc, **kwargs):
+def SV_calc(player_num, task_utility_func, **kwargs):
     for key, value in kwargs.items():
         setattr(args, key, value)
 
-    shap = Shapley(player_num, taskUtilityFunc, args)
+    shap = Shapley(player_num, task_utility_func, args)
     return shap.CalSV()
