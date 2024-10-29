@@ -13,26 +13,26 @@ Modeling DA tasks as cooperative games is the fundamental step for applying SV t
 To use SV4DA, you need the following steps:
 
 1. Download all the codes to your project directory;
-2. Add `from api import Sv_calc` statement in the Python file where you need to call the SV4DA computing function;
-3. Call the `Sv_calc` function with the relevant parameters of the task, and the results of SV calculation will be returned.
+2. Add `from api import SV_calc` statement in the Python file where you need to call the SV4DA computing function;
+3. Call the `SV_calc` function with the relevant parameters of the task, and the results of SV calculation will be returned.
 
-More detailed descriptions of the `Sv_calc` function including what relevant parameters and the format of the return results will be expanded in subsequent paragraphs.
+More detailed descriptions of the `SV_calc` function including what relevant parameters and the format of the return results will be expanded in subsequent paragraphs.
 
 ## Parameters
 
 ### Necessary Parameters
 
-For the `SV_valc` function call, there are three necessary parameters: `player_num`, `taskUtilityFunc` and `method`.
+For the `SV_valc` function call, there are three necessary parameters: `player_num`, `task_utility_func` and `method`.
 
-|    Parameter    |         Options or Scope          | Introduction                                                 | Default |
+|    Parameter    |         Scope          | Introduction                                                 | Default |
 | :-------------: | :-------------------------------: | ------------------------------------------------------------ | :-----: |
 |   player_num    |                 -                 | The number of player.                                        |    -    |
-| taskUtilityFunc |                 -                 | The function interface used to calculate the utility of each coalition. A list-type parameter should be accepted, which represents the list of player numbers of the target coalition to be calculated its utility. |    -    |
+| task_utility_func |                 -                 | The function interface used to calculate the utility of each coalition. A list-type parameter should be accepted, which represents the list of player numbers of the target coalition to be calculated its utility. |    -    |
 |     method      | `exact` `MC` `RE` `MLE` `GT` `CP` | The method used to calculate SV. Six methods of exact calculation(`exact`), Monte Carlo random sampling(`MC`), regression-based SV formulation(`RE`), multilinear-extension-based SV formulation(`MLE`), group-testing-based SV formulation(`GT`) and compressive-permutation-based SV formulation(`CP`) are provided. |  `MC`   |
 
 ### Optional Parameters
 
-| Parameter |          Options or Scope          | Introduction                                                 | Default | Applicable Methods |
+| Parameter |          Scope          | Introduction                                                 | Default | Applicable Methods |
 | :------: | :------: | -------- | :------: | :------: |
 |     sampling_strategy      | `random` `antithetic` `stratified` | Three sampling strategies of random sampling, antithetic sampling and stratified sampling are provided to reduce the approximate error. | `random` | `MC` `RE` `MLE` `GT` `CP` |
 | truncation | `True` `False` | Whether to truncate the unnecessary calculations of some marginal contributions in runtime of approximating SV. | `False` | `MC` `RE` `MLE` `CP` |
@@ -47,4 +47,4 @@ For the `SV_valc` function call, there are three necessary parameters: `player_n
 
 ## Usage Examples
 
-Specific usage examples of SV4DA can be found in [README.md](./examples/README.md).
+Specific usage examples of SV4DA can be found in [examples/README.md](./examples/README.md).
