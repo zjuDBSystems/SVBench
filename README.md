@@ -45,3 +45,6 @@ For the `SV_valc` function call, there are three necessary parameters: `player_n
 | CP_epsilon | - | The epsilon used in CP method. | 0.00001 | `CP` |
 | num_measurement | - | The number of measurement. | 10 | `CP` |
 
+## Usage Examples
+
+Specific usage examples of SV4DA can be found in [README.md](./examples/README.md).
