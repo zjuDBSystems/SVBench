@@ -28,7 +28,7 @@ For the `SV_valc` function call, there are three necessary parameters: `player_n
 | :-------------: | :-------------------------------: | ------------------------------------------------------------ | :-----: |
 |   player_num    |                 -                 | The number of player.                                        |    -    |
 | task_utility_func |                 -                 | The function interface used to calculate the utility of each coalition. A list-type parameter should be accepted, which represents the list of player numbers of the target coalition to be calculated its utility. |    -    |
-|     method      | `exact` `MC` `RE` `MLE` `GT` `CP` | The method used to calculate SV. Six methods of exact calculation(`exact`), Monte Carlo random sampling(`MC`), regression-based SV formulation(`RE`), multilinear-extension-based SV formulation(`MLE`), group-testing-based SV formulation(`GT`) and compressive-permutation-based SV formulation(`CP`) are provided. |  `MC`   |
+|     method      | `EXACT` `MC` `RE` `MLE` `GT` `CP` | The method used to calculate SV. Six methods of exact calculation(`EXACT`), Monte Carlo random sampling(`MC`), regression-based SV formulation(`RE`), multilinear-extension-based SV formulation(`MLE`), group-testing-based SV formulation(`GT`) and compressive-permutation-based SV formulation(`CP`) are provided. |  `MC`   |
 
 ### Optional Parameters
 
@@ -36,6 +36,7 @@ For the `SV_valc` function call, there are three necessary parameters: `player_n
 | :------: | :------: | -------- | :------: | :------: |
 |     sampling_strategy      | `random` `antithetic` `stratified` | Three sampling strategies of random sampling, antithetic sampling and stratified sampling are provided to reduce the approximate error. | `random` | `MC` `RE` `MLE` `GT` `CP` |
 | truncation | `True` `False` | Whether to truncate the unnecessary calculations of some marginal contributions in runtime of approximating SV. | `False` | `MC` `RE` `MLE` `CP` |
+| truncation_threshold | - | Threshold setted in truncation to influence the extent of truncating unnecessary calculations using this technology. | 0.01 | `MC` `RE` `MLE` `CP` |
 | privacy_protection_measure | `DP` `QT` `DR` | The measure to protect privacy. Three methods of differential privacy(`DP`), quantization(`QT`) and dimension reduction(`DR`) are provided. | `None` | `exact` `MC` `RE` `MLE` `GT` `CP` |
 | privacy_protection_level | 0 ~ 1 | The intensity level of providing privacy protection measures, 1 for the highest intensity protection, 0 for non-protection. | 0.0 | `exact` `MC` `RE` `MLE` `GT` `CP` |
 | num_parallelThreads | - | The number of threads used for parallel computing. | 1 | `MC` `MLE` `CP` `RE` |
