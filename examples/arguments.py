@@ -91,8 +91,8 @@ def args_parser():
                         help="CNN model parameter")
 
     # SV parameters
-    parser.add_argument('--base_compFunc', type=str, default="classical",
-                        help="{classical, RE, MLE, GT, CP}")
+    parser.add_argument('--method', type=str, default="MC",
+                        help="{EXACT, MC, RE, MLE, GT, CP}")
     parser.add_argument('--convergence_threshold', type=float, default=0.5,
                         help="approximation convergence_threshold")
     parser.add_argument('--scannedIter_maxNum', type=float, default=np.inf,
@@ -110,11 +110,11 @@ def args_parser():
                         help="{random, antithetic, stratified}")
     parser.add_argument('--truncation', type=bool, default=False,
                         help="{False, True}")
-    parser.add_argument('--truncationThreshold', type=float, default=0.01,
+    parser.add_argument('--truncation_threshold', type=float, default=0.01,
                         help="truncation threshold")
     parser.add_argument('--gradient_approximation', type=bool, default=False,
                         help="{False, True}")
-    parser.add_argument('--testSampleSkip', type=bool, default=False,
+    parser.add_argument('--test_sample_skip', type=bool, default=False,
                         help="{False, True}")
 
     # SV's privacy protection parameters

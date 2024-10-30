@@ -15,7 +15,7 @@ args = {
     'CP_epsilon': 0.00001,
     'sampling_strategy': 'random',
     'truncation': False,
-    'truncationThreshold': 0.01,
+    'truncation_threshold': 0.01,
 
     # SV's privacy protection parameters
     'privacy_protection_measure': None,

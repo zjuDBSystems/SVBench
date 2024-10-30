@@ -131,7 +131,7 @@ class Task():
         )
 
     def utilityComputation(self, player_idxs, gradient_approximation=False,
-                           testSampleSkip=False):
+                           test_sample_skip=False):
         startTime = time.time()
         utility_record_idx = str(sorted(player_idxs))
         if utility_record_idx in self.utility_records:

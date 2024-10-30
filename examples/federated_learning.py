@@ -54,7 +54,7 @@ class Task():
 
     def utilityComputation(self, player_idxs,
                            gradient_approximation=False,
-                           testSampleSkip=False):
+                           test_sample_skip=False):
         startTime = time.time()
         utility_record_idx = str(sorted(player_idxs))
         if utility_record_idx in self.utility_records:
@@ -81,7 +81,7 @@ class Task():
                 AggResults = self.WeightedAvg(localUpdates, p_k)
             global_model = CNN(args=self.args)
             global_model.load_state_dict(AggResults)
-            if testSampleSkip and len(player_idxs) > 0:
+            if test_sample_skip and len(player_idxs) > 0:
                 skippableTestSampleIdxs = set(range(len(self.Tst)))
                 for player_idx in player_idxs:
                     skippableTestSampleIdxs = skippableTestSampleIdxs & self.skippableTestSample[
@@ -94,7 +94,7 @@ class Task():
             utility = DNNTest(global_model, testData,
                               test_bs=self.args.test_bs,
                               metric=self.args.test_metric)
-            if testSampleSkip and len(player_idxs) > 0:
+            if test_sample_skip and len(player_idxs) > 0:
                 del testData
             del global_model
             torch.cuda.empty_cache()
@@ -144,7 +144,7 @@ class Task():
             AggResults = self.WeightedAvg(localUpdates, p_k)
             global_model.load_state_dict(AggResults)
 
-        if testSampleSkip and len(player_idxs) > 0:
+        if test_sample_skip and len(player_idxs) > 0:
             skippableTestSampleIdxs = set(range(len(self.Tst)))
             for player_idx in player_idxs:
                 skippableTestSampleIdxs = skippableTestSampleIdxs & self.skippableTestSample[
@@ -157,7 +157,7 @@ class Task():
         utility = DNNTest(global_model, testData,
                           test_bs=self.args.test_bs,
                           metric=self.args.test_metric)
-        if testSampleSkip and len(player_idxs) > 0:
+        if test_sample_skip and len(player_idxs) > 0:
             del testData
         del global_model, localUpdates
         torch.cuda.empty_cache()
@@ -234,7 +234,7 @@ class Task():
 
                 self.stored_gradients[ridx] = (localUpdates, p_k,
                                                global_model.state_dict())
-                if self.args.testSampleSkip:
+                if self.args.test_sample_skip:
                     self.skippableTestSample = dict([(player_id, set())
                                                      for player_id in range(len(self.players))])
 
@@ -263,7 +263,7 @@ class Task():
                         metric=self.args.test_metric)
 
                     if np.abs((current_taskTotalUtility - emptySet_utility) /
-                              (current_taskTotalUtility+10**(-15))) < self.args.truncationThreshold:
+                              (current_taskTotalUtility+10**(-15))) < self.args.truncation_threshold:
                         print('Truncate the entire round!!!')
                         round_SV[ridx] = dict([(player_id, 0.0)
                                                for player_id in range(len(self.players))])
@@ -313,7 +313,7 @@ class Task():
             _, timeCost = task.utilityComputation(
                 range(player_idx),
                 gradient_approximation=self.args.gradient_approximation,
-                testSampleSkip=self.args.testSampleSkip)
+                test_sample_skip=self.args.test_sample_skip)
             print('Computing utility for %s players tasks %s timeCost...' % (
                 player_idx, timeCost))
             utilityComputationTimeCost[player_idx] = timeCost

@@ -67,7 +67,7 @@ class Task():
         self.utility_records = {str([]): (0, 0)}
 
     def utilityComputation(self, player_idxs, gradient_approximation=False,
-                           testSampleSkip=False):
+                           test_sample_skip=False):
         if self.args.tuple_to_set > 0:
             # invoked when the valuation target is the data set
             all_data_tuple_idx = []
@@ -104,11 +104,11 @@ class Task():
 
             # model testing (maybe expedited by some ML speedup functions)
             '''
-            if testSampleSkip:
+            if test_sample_skip:
                 testSampleIdxs = list(range(len(self.X_test)))
-                if len(testSampleSkip)>0:
+                if len(test_sample_skip)>0:
                     skippableTestSampleIdxs = set(range(len(self.X_test)))
-                    for player_idx in testSampleSkip:
+                    for player_idx in test_sample_skip:
                         skippableTestSampleIdxs = skippableTestSampleIdxs & self.skippableTestSample[player_idx]
                     testSampleIdxs = set(testSampleIdxs) - skippableTestSampleIdxs
                     testSampleIdxs = list(testSampleIdxs)
@@ -118,7 +118,7 @@ class Task():
             utility = DNNTest(self.model, (X_test, y_test),
                               test_bs= len(self.y_test),
                               metric = self.args.test_metric)
-            if testSampleSkip:
+            if test_sample_skip:
                 del (X_test, y_test) 
             '''
             utility = DNNTest(self.model, (self.X_test, self.y_test),
@@ -189,7 +189,7 @@ class Task():
         # reinitialize!!!
         self.utility_records = {str([]): (0, 0)}
         SVtask = Shapley(players=self.players,
-                         taskUtilityFunc=self.utilityComputation,
+                         task_utility_func=self.utilityComputation,
                          args=self.args)
         SVtask.CalSV()
         self.taskTerminated = True
@@ -204,7 +204,7 @@ class Task():
             _, timeCost = self.utilityComputation(
                 range(player_idx),
                 gradient_approximation=self.args.gradient_approximation,
-                testSampleSkip=self.args.testSampleSkip)
+                test_sample_skip=self.args.test_sample_skip)
             print('Computing utility with %s players tasks %s timeCost...' % (
                 player_idx, timeCost))
             utilityComputationTimeCost[player_idx] = timeCost

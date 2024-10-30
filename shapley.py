@@ -56,10 +56,10 @@ class Shapley():
         truncation_flag = False
         # print ('check whether to truncate...')
         if np.abs((self.taskTotalUtility - bef_addition) /
-                  (self.taskTotalUtility+10**(-15))) < self.args.truncationThreshold:
+                  (self.taskTotalUtility+10**(-15))) < self.args.truncation_threshold:
             truncation_flag = True
             # print("[Truncation!]",
-            #      self.taskTotalUtility, bef_addition, self.args.truncationThreshold)
+            #      self.taskTotalUtility, bef_addition, self.args.truncation_threshold)
         return truncation_flag
 
     def generateRandomPermutation(self, ori_permutation, exclude_list=set()):
