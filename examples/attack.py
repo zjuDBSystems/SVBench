@@ -17,7 +17,7 @@ from models.Nets import LinearAttackModel
 from utils.dataset_helper import ImageDataset
 from ML_utils import DNNTrain, DNNTest
 import torch.nn.functional as F
-from Privacy_utils import privacy_protect
+from privacy_utils import privacy_protect
 
 
 def SV_compute(task, sampleIdx, datasetIdx, SV_args):
