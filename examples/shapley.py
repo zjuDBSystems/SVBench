@@ -40,6 +40,9 @@ class Shapley():
         self.privacy_protection_measure = args.privacy_protection_measure
         self.privacy_protection_level = args.privacy_protection_level
 
+        self.SV_cache = []
+        self.cache_size = 5
+
         # utility information
         # self.utility_records = dict()
         self.taskTotalUtility = 0
@@ -78,28 +81,6 @@ class Shapley():
                 range(N), int(k), replace=False)
         return selected_players
 
-    # def sampling(self, sampling_strategy, iter_time,
-    #              num_players, scanned_permutations):
-    #     permutation = list(range(num_players))
-    #     if sampling_strategy == 'antithetic':
-    #         if iter_time % 2 == 1:
-    #             permutation = self.generateRandomPermutation(
-    #                 permutation, scanned_permutations)
-    #         else:
-    #             # antithetic sampling (also called paired sampling)
-    #             permutation = list(reversed(permutation))
-    #     elif sampling_strategy == 'stratified':
-    #         if iter_time % num_players == 1:
-    #             permutation = self.generateRandomPermutation(
-    #                 permutation, scanned_permutations)
-    #         else:
-    #             # stratified sampling
-    #             permutation = permutation[-1:] + permutation[:-1]
-    #     else:
-    #         permutation = self.generateRandomPermutation(
-    #             permutation, scanned_permutations)
-    #     return permutation
-
     def sampling(self, sampling_strategy, iter_time,
                  current_permutation, scanned_permutations):
         if sampling_strategy == 'antithetic':
@@ -121,6 +102,25 @@ class Shapley():
             permutation = self.generateRandomPermutation(
                 current_permutation, scanned_permutations)
         return permutation
+
+    def convergenceCheck(self):
+        if len(self.SV_cache) < self.cache_size:
+            return False
+        count = 0
+        sum_ = 0
+        for SVs in self.SV_cache[:-1]:
+            for (player_id, SV) in SVs.items():
+                count += 1
+                sum_ += np.abs(
+                    (self.SV_cache[-1][player_id]-SV) /
+                    (self.SV_cache[-1][player_id] +
+                     (10**(-12) if self.SV_cache[-1][player_id] == 0
+                      else 0))
+                )
+        if sum_/count <= self.args.convergence_threshold:
+            return True
+        else:
+            return False
 
     def PlayerIteration(self, order, player_id, permutation, iter_time,
                         truncation, convergence_diff, diff_mode='relative'):
@@ -242,11 +242,12 @@ class Shapley():
                     # consider as convergence only when
                     # convergence_diff values in the latest five rounds
                     # are all smaller than the given threshold
-                    convergence = True
-                    for convergence_diff in convergence_diff_records[-5:]:
-                        if convergence_diff > self.args.convergence_threshold:
-                            convergence = False
-                            break
+                    # convergence = True
+                    # for convergence_diff in convergence_diff_records[-5:]:
+                    #     if convergence_diff > self.args.convergence_threshold:
+                    #         convergence = False
+                    #         break
+                    convergence = self.convergenceCheck()
 
     def MLE_parallelableThread(self, q, M, sampling_strategy='random',
                                truncation=False, results=None):
@@ -395,11 +396,12 @@ class Shapley():
                 # consider as convergence only when
                 # convergence_diff values in the latest five rounds
                 # are all smaller than the given threshold
-                convergence = True
-                for convergence_diff in convergence_diff_records[-5:]:
-                    if convergence_diff > self.args.convergence_threshold:
-                        convergence = False
-                        break
+                # convergence = True
+                # for convergence_diff in convergence_diff_records[-5:]:
+                #     if convergence_diff > self.args.convergence_threshold:
+                #         convergence = False
+                #         break
+                convergence = self.convergenceCheck()
 
     def GT(self, sampling_strategy='random', truncation=False):
 
@@ -568,11 +570,12 @@ class Shapley():
                 # consider as convergence only when
                 # convergence_diff values in the latest five rounds
                 # are all smaller than the given threshold
-                convergence = True
-                for convergence_diff in convergence_diff_records[-5:]:
-                    if convergence_diff > self.args.convergence_threshold:
-                        convergence = False
-                        break
+                # convergence = True
+                # for convergence_diff in convergence_diff_records[-5:]:
+                #     if convergence_diff > self.args.convergence_threshold:
+                #         convergence = False
+                #         break
+                convergence = self.convergenceCheck()
 
     def CP(self, sampling_strategy='random', truncation=False):
 
@@ -669,11 +672,12 @@ class Shapley():
                 # consider as convergence only when
                 # convergence_diff values in the latest five rounds
                 # are all smaller than the given threshold
-                convergence = True
-                for convergence_diff in convergence_diff_records[-5:]:
-                    if convergence_diff > self.args.convergence_threshold:
-                        convergence = False
-                        break
+                # convergence = True
+                # for convergence_diff in convergence_diff_records[-5:]:
+                #     if convergence_diff > self.args.convergence_threshold:
+                #         convergence = False
+                #         break
+                convergence = self.convergenceCheck()
 
     def RE_parallelableThread(self, order, selected_players,
                               truncation=False, results=None):
@@ -783,11 +787,12 @@ class Shapley():
                 # consider as convergence only when
                 # convergence_diff values in the latest five rounds
                 # are all smaller than the given threshold
-                convergence = True
-                for convergence_diff in convergence_diff_records[-5:]:
-                    if convergence_diff > self.args.convergence_threshold:
-                        convergence = False
-                        break
+                # convergence = True
+                # for convergence_diff in convergence_diff_records[-5:]:
+                #     if convergence_diff > self.args.convergence_threshold:
+                #         convergence = False
+                #         break
+                convergence = self.convergenceCheck()
 
     def computeAllSubsetUtility(self):
         N = self.player_num
