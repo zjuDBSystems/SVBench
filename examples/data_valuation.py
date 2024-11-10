@@ -12,6 +12,7 @@ import time
 import numpy as np
 
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
 from models.Nets import RegressionModel, CNN  # , CNNCifar
 from ML_utils import DNNTrain, DNNTest, find_free_gpu
 # from torch.utils.data import DataLoader
@@ -66,8 +67,9 @@ class Task():
         # utility setting
         self.utility_records = {str([]): (0, 0)}
 
-    def utilityComputation(self, player_idxs, gradient_approximation=False,
-                           test_sample_skip=False):
+    def utilityComputation(self, player_idxs):
+        gradient_approximation = self.args.gradient_approximation
+        test_sample_skip = self.args.test_sample_skip
         if self.args.tuple_to_set > 0:
             # invoked when the valuation target is the data set
             all_data_tuple_idx = []
@@ -125,7 +127,7 @@ class Task():
                               test_bs=len(self.y_test),
                               metric=self.args.test_metric)
 
-        elif self.model_name in ['CNN', 'Linear']:
+        elif self.model_name in ['CNN', 'Linear', 'Tree']:
             # model initialize and training
             if not gradient_approximation or type(self.model) == type(None) or\
                     len(player_idxs) <= 0:
@@ -135,6 +137,12 @@ class Task():
                     self.model = CNN(args=self.args)
                 elif self.model_name == 'Linear':
                     self.model = RegressionModel(args=self.args)
+                elif self.model_name == 'Tree':
+                    self.model = DecisionTreeClassifier(
+                        criterion='entropy',
+                        random_state=self.args.manual_seed,
+                        max_depth=self.args.tree_maxDepth
+                    )
 
             if len(player_idxs) <= 0:
                 utility = DNNTest(self.model, self.Tst,

@@ -52,9 +52,9 @@ class Task():
         self.skippableTestSample = dict([(player_id, set())
                                          for player_id in range(len(self.players))])
 
-    def utilityComputation(self, player_idxs,
-                           gradient_approximation=False,
-                           test_sample_skip=False):
+    def utilityComputation(self, player_idxs):
+        gradient_approximation = self.args.gradient_approximation
+        test_sample_skip = self.args.test_sample_skip
         startTime = time.time()
         utility_record_idx = str(sorted(player_idxs))
         if utility_record_idx in self.utility_records:
@@ -195,14 +195,14 @@ class Task():
         thread = threading.Thread(target=task.printFlush)
         thread.daemon = True
         thread.start()
-        SVtask = Shapley(players=self.players,
-                         taskUtilityFunc=self.utilityComputation,
-                         args=self.args)
 
         if not self.args.gradient_approximation:
             self.preExp_statistic()
             # reinitialize!!!
             self.utility_records = {str([]): (0, 0)}
+            SVtask = Shapley(players=self.players,
+                             taskUtilityFunc=self.utilityComputation,
+                             args=self.args)
             SVtask.CalSV()
         else:
             # model initialize and training
@@ -272,6 +272,9 @@ class Task():
                 dict_utilityComputationTimeCost[ridx] = self.preExp_statistic()
                 # reinitialize!!!
                 self.utility_records = {str([]): (0, 0)}
+                SVtask = Shapley(players=self.players,
+                                 taskUtilityFunc=self.utilityComputation,
+                                 args=self.args)
                 SVtask.CalSV()
                 round_SV[ridx] = SVtask.SV
 
