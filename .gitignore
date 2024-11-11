@@ -1,1 +1,4 @@
 examples/data/
+examples/utils/__pycache__/
+examples/models/__pycache__/
+examples/__pycache__/
