@@ -58,7 +58,7 @@ class Shapley():
 
     def clearLogFile(self):
         lines = [line for line in open(self.args.log_file, 'r').readlines()\
-                 if 'Done' not in line and len(line.replace(' ','').strip()>0)]
+                 if 'Done' not in line and len(line.replace(' ','').strip())>0] 
         with open(self.args.log_file, 'w') as log_file:
             log_file.writelines(lines)
         log_file.close()
