@@ -254,6 +254,8 @@ class Shapley():
             if len(self.SV_cache) > self.cache_size:
                 self.SV_cache = self.SV_cache[-self.cache_size:]
 
+            # print current progress
+            self.clearLogFile()
             print('Monte Carlo iteration %s done ' % iter_time)
             print("Current SV: ", self.SV)
             print("Current runtime: ", time.time()-self.startTime)
@@ -524,7 +526,7 @@ class Shapley():
                 result[int(v.name)] = v.varValue
             print('One solution for reference:', v.name, "=", v.varValue)
             print("F(x) = ", pulp.value(MyProbLP.objective),
-                  self.taskTotalUtility)  # 输出最优解的目标函数值
+                  self.taskTotalUtility)  # print the value of the target function under the optimal solution
 
             # update SV
             self.SV = dict([(player_id, result[player_id])
@@ -536,6 +538,7 @@ class Shapley():
                 self.SV_cache = self.SV_cache[-self.cache_size:]
 
             # print current progress
+            self.clearLogFile()
             print('Group testing iteration %s done!' % iter_time)
             print("Current SV: ", self.SV)
             print("Current runtime: ", time.time()-self.startTime)
@@ -637,6 +640,7 @@ class Shapley():
                 self.SV_cache = self.SV_cache[-self.cache_size:]
 
             # print current progress
+            self.clearLogFile()
             print('Compressive permutation sampling iteration %s done!' % iter_time)
             print("Current SV: ", self.SV)
             print("Current runtime: ", time.time()-self.startTime)
