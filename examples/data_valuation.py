@@ -188,7 +188,7 @@ class Task():
         self.preExp_statistic()
         # reinitialize!!!
         self.utility_records = {str([]): (0, 0)}
-        SVtask = Shapley(players=self.players,
+        SVtask = Shapley(player_num=len(self.players),
                          task_utility_func=self.utilityComputation,
                          args=self.args)
         SVtask.CalSV()
