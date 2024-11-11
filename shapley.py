@@ -782,7 +782,11 @@ class Shapley():
               '%e' % (2*self.player_num * 2**(self.player_num-1)))
         print('(permutation sampling) Total number of utility computations:',
               '%e' % (2*self.player_num * math.factorial(self.player_num)))
-
+        self.taskTotalUtility, _ = self.utilityComputation(
+            range(len(self.players)), 
+            self.gradient_approximation, self.testSampleSkip)
+        print('The task\'s total utility: ', self.taskTotalUtility)
+        
     def CalSV(self):
         self.problemScale_statistics()
 
@@ -807,11 +811,6 @@ class Shapley():
             base_compFunc = self.CP
         else:
             print("Unknown computation method!!")
-
-        if self.truncationFlag or self.method in ['RE', 'GT', 'CP']:
-            self.taskTotalUtility, _ = self.utilityComputation(
-                range(self.player_num))
-            print('The task\'s total utility: ', self.taskTotalUtility)
 
         if self.method == 'RE':
             self.emptySet_utility, _ = self.utilityComputation([])
