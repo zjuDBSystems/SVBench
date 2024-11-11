@@ -54,13 +54,19 @@ class Task():
         self.X_train = np.array(self.X_train)
         self.y_train = np.array(self.y_train)
 
-        baseline_idxs1 = np.random.choice(np.where(self.y_train == 0)[0],
-                                          10, replace=False).tolist()
-        baseline_idxs2 = np.random.choice(np.where(self.y_train == 1)[0],
-                                          10, replace=False).tolist()
-        print('selected baseline idx: ', baseline_idxs2)
-        self.feature_baseline = copy.deepcopy(self.X_train)[
-            baseline_idxs1 + baseline_idxs2]
+        # baseline_idxs1 = np.random.choice(np.where(self.y_train == 0)[0],
+        #                                   10, replace=False).tolist()
+        # baseline_idxs2 = np.random.choice(np.where(self.y_train == 1)[0],
+        #                                   10, replace=False).tolist()
+        # print('selected baseline idx: ', baseline_idxs2)
+        # self.feature_baseline = copy.deepcopy(self.X_train)[
+        #     baseline_idxs1 + baseline_idxs2]
+        baseline_idxs = []
+        for label in np.unique(self.y_train):
+            baseline_idxs += np.random.choice(np.where(self.y_train == label)[0],
+                                              10, replace=False).tolist()
+        print('selected baseline idx: ', baseline_idxs)
+        self.feature_baseline = copy.deepcopy(self.X_train)[baseline_idxs]
         '''
         self.feature_baseline = copy.deepcopy(self.X_train)
         for feature_id in range(self.X_train.shape[-1]):
@@ -130,8 +136,9 @@ class Task():
                     metric=self.args.test_metric)
         )
 
-    def utilityComputation(self, player_idxs, gradient_approximation=False,
-                           test_sample_skip=False):
+    def utilityComputation(self, player_idxs):
+        gradient_approximation = self.args.gradient_approximation
+        test_sample_skip = self.args.test_sample_skip
         startTime = time.time()
         utility_record_idx = str(sorted(player_idxs))
         if utility_record_idx in self.utility_records:
@@ -252,7 +259,15 @@ class Task():
         if self.model_name in ['KNN', 'Tree']:
             complete_X_test = copy.deepcopy(self.X_test)
             complete_y_test = copy.deepcopy(self.y_test)
+            selected_test_samples = []
+            for label in np.unique(self.y_test):
+                selected_test_samples += np.random.choice(
+                    np.where(self.y_test == label)[0],
+                    10, replace=False).tolist()  # select 10 samples in each class
             for test_idx in range(len(complete_X_test)):
+                # compute SV for only selected test samples for saving time cost
+                if test_idx not in selected_test_samples:
+                    continue
                 # reinitialize!!!
                 self.utility_records = {str([]): (0, 0)}
                 self.X_test = complete_X_test[test_idx:test_idx+1]
@@ -274,7 +289,15 @@ class Task():
             self.y_test = complete_y_test
         else:
             complete_Tst_idx = self.Tst.idx
+            selected_test_samples = []
+            for label in np.unique(self.Tst.labels):
+                selected_test_samples += np.random.choice(
+                    np.where(self.Tst.labels == label)[0],
+                    10, replace=False).tolist()  # select 10 samples in each class
             for test_idx in range(len(complete_Tst_idx)):
+                # compute SV for only selected test samples for saving time cost
+                if test_idx not in selected_test_samples:
+                    continue
                 # reinitialize!!!
                 self.utility_records = {str([]): (0, 0)}
                 self.Tst.idx = complete_Tst_idx[test_idx:test_idx+1]
