@@ -286,8 +286,7 @@ class Shapley():
                                                         scanned_permutations)
 
     def MLE_parallelableThread(self, player_id, subset, bef_addition,
-                               truncation=False, gradient_approximation=False, 
-                               testSampleSkip = False, results=None):
+                               truncation=False, results=None):
         if player_id in subset:
             results.put((player_id, 0, 0)) # needed according to the original paper
             return
@@ -296,31 +295,28 @@ class Shapley():
             aft_addition = bef_addition
         else:
             # utility after adding the targeted player
-            aft_addition, timeCost = self.utilityComputation(
-                list(subset)+[player_id], 
-                gradient_approximation, testSampleSkip)
+            aft_addition, timeCost = self.utilityComputation(list(subset)+[player_id])
         results.put((player_id, aft_addition-bef_addition, timeCost))
         
     
     def MLE(self, sampling_strategy = 'random', 
-           truncation=False, gradient_approximation=False, 
-           testSampleSkip = False):
+           truncation=False):
         
         # multilinear extension
         # refer to paper: A Multilinear Sampling Algorithm to Estimate Shapley Values
         self.SV = dict([(player_id, 0.0) \
-                        for player_id in range(len(self.players))])
+                        for player_id in range(self.player_num)])
             
         #convergence_diff_records = []
         convergence = False
         MLE_interval = 0
         scanned_coalitions = set()
         scanned_probabilities = set()
-        e = np.zeros(len(self.players))
-        num_comp = np.zeros(len(self.players))
+        e = np.zeros(self.player_num)
+        num_comp = np.zeros(self.player_num)
         M = 2 
         while not convergence:
-            MLE_interval += int(len(self.players)/M)
+            MLE_interval += int(self.player_num/M)
             #if self.sampling_strategy != 'antithetic':
             if self.sampling_strategy == 'antithetic':
                 num_iter = int(MLE_interval/2) + 1
@@ -339,14 +335,14 @@ class Shapley():
                     else:
                         q = iter_/MLE_interval
                         I_mq = np.random.binomial(1, q, 
-                                                  size=(len(self.players)))
+                                                  size=(self.player_num))
                         # check whether to be computed in the previous iterations
                         while ",".join(map(str,list(I_mq))) in scanned_coalitions:
                             q = np.random.rand()
                             while q in scanned_probabilities:
                                 q = np.random.rand()
                             I_mq = np.random.binomial(1, q, 
-                                                      size=(len(self.players)))
+                                                      size=(self.player_num))
                         scanned_probabilities.add(q)    
                            
                     scanned_coalitions.add(
@@ -354,21 +350,19 @@ class Shapley():
                     
                     # utility before adding the targeted player
                     subset = [player_id \
-                              for player_id in range(len(self.players)) \
+                              for player_id in range(self.player_num) \
                                   if I_mq[player_id]==1]
-                    bef_addition, timeCost = self.utilityComputation(
-                        subset, gradient_approximation, testSampleSkip)
+                    bef_addition, timeCost = self.utilityComputation(subset)
                     results.put((-1, -1, timeCost))
                     
                     # speed up by multiple threads
                     threads = [] 
-                    for player_id in range(len(self.players)):
+                    for player_id in range(self.player_num):
                         # compute under the other q values
                         thread = threading.Thread(
                             target=self.MLE_parallelableThread,
                             args=(player_id, subset, bef_addition,
-                                  truncation, gradient_approximation, 
-                                  testSampleSkip, results))
+                                  truncation, results))
                         thread.daemon = True
                         thread.start()
                         threads.append(thread)
@@ -378,7 +372,7 @@ class Shapley():
                                 t.join()
                             threads = []
                             print('Done %s/%s  (with MLE_interval_%s iter %s) ...'%(
-                                  player_id+1, len(self.players), 
+                                  player_id+1, self.player_num, 
                                   MLE_interval, iter_+1))
                     for t in threads:
                         t.join()
@@ -395,8 +389,8 @@ class Shapley():
             
             # update SV
             self.SV = dict([(player_id, e[player_id] / num_comp[player_id]) \
-                            for player_id in range(len(self.players))])
-            for player_id in range(len(self.players)): 
+                            for player_id in range(self.player_num)])
+            for player_id in range(self.player_num): 
                 self.SV_var[player_id].append(self.SV[player_id])
             self.SV_cache.append(copy.deepcopy(self.SV))
             if len(self.SV_cache)>self.cache_size:

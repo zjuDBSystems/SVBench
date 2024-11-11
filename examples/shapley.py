@@ -56,6 +56,13 @@ class Shapley():
         self.num_utility_comp = 0
         self.timeCost_per_utility_comp = []
 
+    def clearLogFile(self):
+        lines = [line for line in open(self.args.log_file, 'r').readlines()\
+                 if 'Done' not in line and len(line.replace(' ','').strip())>0] 
+        with open(self.args.log_file, 'w') as log_file:
+            log_file.writelines(lines)
+        log_file.close()
+        
     def truncation(self, truncation, bef_addition):
         if truncation == False:
             return False
@@ -247,6 +254,8 @@ class Shapley():
             if len(self.SV_cache) > self.cache_size:
                 self.SV_cache = self.SV_cache[-self.cache_size:]
 
+            # print current progress
+            self.clearLogFile()
             print('Monte Carlo iteration %s done ' % iter_time)
             print("Current SV: ", self.SV)
             print("Current runtime: ", time.time()-self.startTime)
@@ -276,142 +285,119 @@ class Shapley():
                     convergence = self.convergenceCheck(sampling_strategy,
                                                         scanned_permutations)
 
-    def MLE_parallelableThread(self, q, M, sampling_strategy='random', exclude_list=[],
+    def MLE_parallelableThread(self, player_id, subset, bef_addition,
                                truncation=False, results=None):
-        for m in range(M):
-            # generate Bernoulli random numbers independently
-            I_mq = np.random.binomial(1, q,
-                                      size=(self.player_num))
-            # check whether to be computed in the previous iterations
-            # while ",".join(map(str, list(I_mq))) in exclude_list:
-            #     selected_index = np.random.choice(range(len(I_mq)), 1)
-            #     I_mq[selected_index] = 1-I_mq[selected_index]
-            exclude_list.add(
-                ",".join(map(str, list(I_mq))))
-            subset = []
-            for player_id in range(self.player_num):
-                if I_mq[player_id] == 1:
-                    subset.append(player_id)
-            # utility before adding the targeted player
-            bef_addition, timeCost = self.utilityComputation(subset)
-            results.put((-1, -1, timeCost))
-
-            for player_id in range(self.player_num):
-                if I_mq[player_id] == 1:
-                    # needed according to the original paper
-                    results.put((player_id, 0, 0))
-                    continue
-                if self.truncation(truncation, bef_addition):
-                    timeCost = 0
-                    aft_addition = bef_addition
-                else:
-                    # utility after adding the targeted player
-                    aft_addition, timeCost = self.utilityComputation(
-                        list(subset)+[player_id])
-                results.put((player_id, aft_addition-bef_addition, timeCost))
-
-            if self.sampling_strategy != 'antithetic':
-                continue
-            # antithetic sampling
-            I_mq = 1-I_mq
-            exclude_list.add(
-                ",".join(map(str, list(I_mq))))
-            subset = []
-            for player_id in range(self.player_num):
-                if I_mq[player_id] == 1:
-                    subset.append(player_id)
-            # utility before adding the targeted player
-            bef_addition, timeCost = self.utilityComputation(subset)
-            results.put((-1, -1, timeCost))
-
-            for player_id in range(self.player_num):
-                if I_mq[player_id] == 1:
-                    # needed according to the original paper
-                    results.put((player_id, 0, 0))
-                    continue
-                if self.truncation(truncation, bef_addition):
-                    timeCost = 0
-                    aft_addition = bef_addition
-                else:
-                    # utility after adding the targeted player
-                    aft_addition, timeCost = self.utilityComputation(
-                        list(subset)+[player_id])
-                results.put((player_id, aft_addition-bef_addition, timeCost))
-
-    def MLE(self, sampling_strategy='random', truncation=False):
+        if player_id in subset:
+            results.put((player_id, 0, 0)) # needed according to the original paper
+            return
+        if self.truncation(truncation, bef_addition):
+            timeCost = 0
+            aft_addition = bef_addition
+        else:
+            # utility after adding the targeted player
+            aft_addition, timeCost = self.utilityComputation(list(subset)+[player_id])
+        results.put((player_id, aft_addition-bef_addition, timeCost))
+        
+    
+    def MLE(self, sampling_strategy = 'random', 
+           truncation=False):
+        
         # multilinear extension
         # refer to paper: A Multilinear Sampling Algorithm to Estimate Shapley Values
-        self.SV = dict([(player_id, 0.0)
+        self.SV = dict([(player_id, 0.0) \
                         for player_id in range(self.player_num)])
-
+            
+        #convergence_diff_records = []
         convergence = False
         MLE_interval = 0
         scanned_coalitions = set()
+        scanned_probabilities = set()
         e = np.zeros(self.player_num)
         num_comp = np.zeros(self.player_num)
+        M = 2 
         while not convergence:
-            M = 2
             MLE_interval += int(self.player_num/M)
+            #if self.sampling_strategy != 'antithetic':
             if self.sampling_strategy == 'antithetic':
-                num_iter = int(MLE_interval/2)+1
+                num_iter = int(MLE_interval/2) + 1
+                M *= 2
             else:
-                num_iter = MLE_interval+1
-
-            print(
-                'Multilinear extension iteration (with MLE_interval_%s) start!' % MLE_interval)
-            threads = []  # speed up by multiple threads
+                num_iter = MLE_interval + 1
+                
+            print('Multilinear extension iteration (with MLE_interval_%s) start!'%MLE_interval) 
             results = queue.Queue()
+            I_mq = None 
             for iter_ in range(num_iter):
-                # compute under q=0 and q=1 for only one time
-                if iter_/MLE_interval == 0:
-                    I_mq = np.random.binomial(1, 0,
-                                              size=(len(self.players)))
-                    if ",".join(map(str, list(I_mq))) in scanned_coalitions:
-                        continue
-                elif iter_/MLE_interval == 1:
-                    I_mq = np.random.binomial(1, 1,
-                                              size=(len(self.players)))
-                    if ",".join(map(str, list(I_mq))) in scanned_coalitions:
-                        continue
-
-                # compute under the other q values
-                thread = threading.Thread(
-                    target=self.MLE_parallelableThread,
-                    args=(iter_/MLE_interval, M,
-                          sampling_strategy, scanned_coalitions,
-                          truncation, results))
-                thread.daemon = True
-                thread.start()
-                threads.append(thread)
-                if self.args.num_parallelThreads <= 1 or\
-                        (len(threads) % self.args.num_parallelThreads == 0):
+                for m in range(M):
+                    # generate Bernoulli random numbers independently
+                    if self.sampling_strategy == 'antithetic' and m%2==1:
+                        I_mq = 1-I_mq
+                    else:
+                        q = iter_/MLE_interval
+                        I_mq = np.random.binomial(1, q, 
+                                                  size=(self.player_num))
+                        # check whether to be computed in the previous iterations
+                        while ",".join(map(str,list(I_mq))) in scanned_coalitions:
+                            q = np.random.rand()
+                            while q in scanned_probabilities:
+                                q = np.random.rand()
+                            I_mq = np.random.binomial(1, q, 
+                                                      size=(self.player_num))
+                        scanned_probabilities.add(q)    
+                           
+                    scanned_coalitions.add(
+                        ",".join(map(str,list(I_mq))))
+                    
+                    # utility before adding the targeted player
+                    subset = [player_id \
+                              for player_id in range(self.player_num) \
+                                  if I_mq[player_id]==1]
+                    bef_addition, timeCost = self.utilityComputation(subset)
+                    results.put((-1, -1, timeCost))
+                    
+                    # speed up by multiple threads
+                    threads = [] 
+                    for player_id in range(self.player_num):
+                        # compute under the other q values
+                        thread = threading.Thread(
+                            target=self.MLE_parallelableThread,
+                            args=(player_id, subset, bef_addition,
+                                  truncation, results))
+                        thread.daemon = True
+                        thread.start()
+                        threads.append(thread)
+                        if self.args.num_parallelThreads <=1 or\
+                        (len(threads)%self.args.num_parallelThreads==0):
+                            for t in threads:
+                                t.join()
+                            threads = []
+                            print('Done %s/%s  (with MLE_interval_%s iter %s) ...'%(
+                                  player_id+1, self.player_num, 
+                                  MLE_interval, iter_+1))
                     for t in threads:
                         t.join()
-                    threads = []
-                    print('Done %s/%s  (with MLE_interval_%s) ...' % (
-                        iter_, num_iter, MLE_interval))
-            for t in threads:
-                t.join()
-
+            
+            
             while not results.empty():
                 (player_id, delta_utility, timeCost) = results.get()
-                if player_id != -1:
+                if player_id!=-1:
                     e[player_id] += delta_utility
-                    num_comp[player_id] += 1
-                if timeCost > 0:
-                    self.num_utility_comp += 1
-                    self.timeCost_per_utility_comp.append(timeCost)
-
+                    num_comp[player_id]+=1
+                if timeCost>0:
+                    self.num_utility_comp +=1
+                    self.timeCost_per_utility_comp.append(timeCost) 
+            
             # update SV
-            self.SV = dict([(player_id, e[player_id] / num_comp[player_id])
+            self.SV = dict([(player_id, e[player_id] / num_comp[player_id]) \
                             for player_id in range(self.player_num)])
-            for player_id in range(self.player_num):
+            for player_id in range(self.player_num): 
                 self.SV_var[player_id].append(self.SV[player_id])
             self.SV_cache.append(copy.deepcopy(self.SV))
-            if len(self.SV_cache) > self.cache_size:
+            if len(self.SV_cache)>self.cache_size:
                 self.SV_cache = self.SV_cache[-self.cache_size:]
-
+                
             # print current progress
+            self.clearLogFile()
             print(
                 'Multilinear extension iteration (with MLE_interval_%s) done ' % MLE_interval)
             print("Current SV: ", self.SV)
@@ -534,7 +520,7 @@ class Shapley():
                 result[int(v.name)] = v.varValue
             print('One solution for reference:', v.name, "=", v.varValue)
             print("F(x) = ", pulp.value(MyProbLP.objective),
-                  self.taskTotalUtility)  # 输出最优解的目标函数值
+                  self.taskTotalUtility)  # print the value of the target function under the optimal solution
 
             # update SV
             self.SV = dict([(player_id, result[player_id])
@@ -546,6 +532,7 @@ class Shapley():
                 self.SV_cache = self.SV_cache[-self.cache_size:]
 
             # print current progress
+            self.clearLogFile()
             print('Group testing iteration %s done!' % iter_time)
             print("Current SV: ", self.SV)
             print("Current runtime: ", time.time()-self.startTime)
@@ -647,6 +634,7 @@ class Shapley():
                 self.SV_cache = self.SV_cache[-self.cache_size:]
 
             # print current progress
+            self.clearLogFile()
             print('Compressive permutation sampling iteration %s done!' % iter_time)
             print("Current SV: ", self.SV)
             print("Current runtime: ", time.time()-self.startTime)
