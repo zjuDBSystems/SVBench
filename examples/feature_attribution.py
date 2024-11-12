@@ -317,7 +317,7 @@ class Task():
 
             self.Tst.idx = complete_Tst_idx
 
-        print('Average time cost for omputing utility (averged by all samples): ',
+        print('Average time cost for computing utility (averged by all samples): ',
               sum([np.sum(list(utilityComputationTimeCost.values()))
                    for utilityComputationTimeCost in dict_utilityComputationTimeCost.values()]) /
               sum([len(utilityComputationTimeCost.values())
