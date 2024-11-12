@@ -328,7 +328,11 @@ class Shapley():
             results = queue.Queue()
             I_mq = None 
             for iter_ in range(num_iter):
+                if len(scanned_coalitions) >= 2**len(self.players):
+                    break
                 for m in range(M):
+                    if len(scanned_coalitions) >= 2**len(self.players):
+                    break
                     # generate Bernoulli random numbers independently
                     if self.sampling_strategy == 'antithetic' and m%2==1:
                         I_mq = 1-I_mq
