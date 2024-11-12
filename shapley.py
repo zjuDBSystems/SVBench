@@ -311,7 +311,7 @@ class Shapley():
         convergence = False
         MLE_interval = 0
         scanned_coalitions = set()
-        scanned_probabilities = set()
+        # scanned_probabilities = set()
         e = np.zeros(self.player_num)
         num_comp = np.zeros(self.player_num)
         M = 2 
@@ -328,7 +328,11 @@ class Shapley():
             results = queue.Queue()
             I_mq = None 
             for iter_ in range(num_iter):
+                if len(scanned_coalitions) >= 2**len(self.players):
+                    break
                 for m in range(M):
+                    if len(scanned_coalitions) >= 2**len(self.players):
+                    break
                     # generate Bernoulli random numbers independently
                     if self.sampling_strategy == 'antithetic' and m%2==1:
                         I_mq = 1-I_mq
@@ -339,11 +343,11 @@ class Shapley():
                         # check whether to be computed in the previous iterations
                         while ",".join(map(str,list(I_mq))) in scanned_coalitions:
                             q = np.random.rand()
-                            while q in scanned_probabilities:
-                                q = np.random.rand()
+                            # while q in scanned_probabilities:
+                            #    q = np.random.rand()
                             I_mq = np.random.binomial(1, q, 
                                                       size=(self.player_num))
-                        scanned_probabilities.add(q)    
+                        # scanned_probabilities.add(q)    
                            
                     scanned_coalitions.add(
                         ",".join(map(str,list(I_mq))))

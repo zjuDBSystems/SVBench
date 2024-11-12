@@ -320,7 +320,7 @@ class Task():
             print('Computing utility for %s players tasks %s timeCost...' % (
                 player_idx, timeCost))
             utilityComputationTimeCost[player_idx] = timeCost
-        print('Average time cost for omputing utility: ',
+        print('Average time cost for computing utility: ',
               np.mean(list(utilityComputationTimeCost.values())))
         return utilityComputationTimeCost
 
