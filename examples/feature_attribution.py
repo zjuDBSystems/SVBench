@@ -63,8 +63,17 @@ class Task():
         #     baseline_idxs1 + baseline_idxs2]
         baseline_idxs = []
         for label in np.unique(self.y_train):
-            baseline_idxs += np.random.choice(np.where(self.y_train == label)[0],
-                                              10, replace=False).tolist()
+            class_idx = np.where(self.y_train==label)[0]
+            class_data = self.X_train[class_idx]
+            intra_class_dis = [np.mean(
+                np.linalg.norm(
+                    class_data - class_data[data_idx], ord=1, axis=1)
+                ) for data_idx in range(len(class_data))]
+            #print('label %s'%label, 
+            #      np.array(intra_class_dis)[np.argsort(intra_class_dis)])
+            baseline_idxs += class_idx[np.argsort(intra_class_dis)][:5].tolist()
+            #baseline_idxs += np.random.choice(np.where(self.y_train==label)[0], 
+            #                                  5, replace=False).tolist()
         print('selected baseline idx: ', baseline_idxs)
         self.feature_baseline = copy.deepcopy(self.X_train)[baseline_idxs]
         '''
@@ -94,17 +103,16 @@ class Task():
             'data/%s%s/test.pt' % (args.dataset, args.data_allocation),
             # map_location=self.device
         )
-        if self.model_name in ['KNN', 'Tree']:
-            self.X_test = []
-            self.y_test = []
-            for item in self.Tst:
-                data, label = item[0], item[1]
-                if type(data) != np.ndarray:
-                    data = data.numpy()
-                self.X_test.append(data.reshape(-1))
-                self.y_test.append(label)
-            self.X_test = np.array(self.X_test)
-            self.y_test = np.array(self.y_test)
+        self.X_test = []
+        self.y_test = []
+        for item in self.Tst:
+            data, label = item[0], item[1]
+            if type(data) != np.ndarray:
+                data = data.numpy()
+            self.X_test.append(data.reshape(-1))
+            self.y_test.append(label)
+        self.X_test = np.array(self.X_test)
+        self.y_test = np.array(self.y_test)
 
         # player setting
         self.players = [feature_idx
