@@ -15,6 +15,18 @@ class RegressionModel(nn.Module):
         x2 = self.drop(x1)
         outputs = self.linear2(x2)
         return outputs
+
+class SoftmaxRegressionModel(nn.Module):
+    def __init__(self, args):
+        super(SoftmaxRegressionModel, self).__init__()
+        # 第一层线性变换
+        self.linear1 = nn.Linear(args.num_feature, args.num_classes)
+        self.softmax = nn.Softmax(dim=1)
+    
+    def forward(self, x):
+        x = self.linear1(x)
+        outputs = self.softmax(x)
+        return outputs
     
 class LinearAttackModel(nn.Module):
     def __init__(self, num_feature):

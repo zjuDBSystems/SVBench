@@ -9,7 +9,7 @@ import torch,copy
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import f1_score, accuracy_score
-from models.Nets import  CNN, RegressionModel, LinearAttackModel#, CNNCifar
+from models.Nets import  CNN, RegressionModel, LinearAttackModel, SoftmaxRegressionModel#, CNNCifar
 from sklearn.metrics import f1_score, accuracy_score
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
@@ -26,7 +26,7 @@ def DNNTrain(model, trn_data, epoch=1, batch_size=128, lr=0.1, loss_func=None,
         model.fit(X_train, y_train)
         
     elif type(model) == CNN or type(model) == RegressionModel or \
-    type(model) == LinearAttackModel:
+    type(model) == LinearAttackModel or type(model) == SoftmaxRegressionModel:
         device = torch.device(
             'cuda:{}'.format(find_free_gpu()) \
                 if torch.cuda.is_available() else 'cpu'
@@ -135,7 +135,7 @@ def DNNTest(model, testData, test_bs=128,
             print("targets: ", y_test.tolist())
             
     elif type(model) == CNN or type(model) == RegressionModel or \
-    type(model) == LinearAttackModel:
+    type(model) == LinearAttackModel or type(model) == SoftmaxRegressionModel:
         
         param = list(model.parameters())[0]
         if 'cuda' in str(param.device):
