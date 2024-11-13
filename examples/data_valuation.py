@@ -13,7 +13,7 @@ import numpy as np
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-from models.Nets import RegressionModel, CNN, SoftmaxRegressionModel  # , CNNCifar
+from models.Nets import RegressionModel, CNN, NN  # , CNNCifar
 from ML_utils import DNNTrain, DNNTest, find_free_gpu
 # from torch.utils.data import DataLoader
 import copy
@@ -127,7 +127,7 @@ class Task():
                               test_bs=len(self.y_test),
                               metric=self.args.test_metric)
 
-        elif self.model_name in ['CNN', 'Linear', 'Tree', 'Soft']:
+        elif self.model_name in ['CNN', 'Linear', 'Tree', 'NN']:
             # model initialize and training
             if not gradient_approximation or type(self.model) == type(None) or\
                     len(player_idxs) <= 0:
@@ -143,8 +143,8 @@ class Task():
                         random_state=self.args.manual_seed,
                         max_depth=self.args.tree_maxDepth
                     )
-                elif self.model_name == 'Soft':
-                    self.model = SoftmaxRegressionModel(args=self.args)
+                elif self.model_name == 'NN':
+                    self.model = NN(args=self.args)
 
             if len(player_idxs) <= 0:
                 utility = DNNTest(self.model, self.Tst,
@@ -211,9 +211,9 @@ class Task():
         utilityComputationTimeCost = dict()
         for player_idx in range(len(self.players)):
 
-            _, timeCost = self.utilityComputation(range(player_idx))
-            print('Computing utility with %s players tasks %s timeCost...' % (
-                player_idx, timeCost))
+            u, timeCost = self.utilityComputation(range(player_idx))
+            print('Computing utility with %s players tasks %s timeCost %s utility...' % (
+                player_idx, timeCost, u))
             utilityComputationTimeCost[player_idx] = timeCost
         print('Average time cost for computing utility: ',
               np.mean(list(utilityComputationTimeCost.values())))

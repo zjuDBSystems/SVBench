@@ -16,17 +16,18 @@ class RegressionModel(nn.Module):
         outputs = self.linear2(x2)
         return outputs
 
-class SoftmaxRegressionModel(nn.Module):
+class NN(nn.Module):
     def __init__(self, args):
-        super(SoftmaxRegressionModel, self).__init__()
-        # 第一层线性变换
-        self.linear1 = nn.Linear(args.num_feature, args.num_classes)
-        self.softmax = nn.Softmax(dim=1)
-    
+        super(NN, self).__init__()
+        self.fc1 = nn.Linear(args.num_feature, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, args.num_classes)
+
     def forward(self, x):
-        x = self.linear1(x)
-        outputs = self.softmax(x)
-        return outputs
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
     
 class LinearAttackModel(nn.Module):
     def __init__(self, num_feature):

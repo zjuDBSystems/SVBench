@@ -9,7 +9,7 @@ import torch,copy
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import f1_score, accuracy_score
-from models.Nets import  CNN, RegressionModel, LinearAttackModel, SoftmaxRegressionModel#, CNNCifar
+from models.Nets import  CNN, RegressionModel, LinearAttackModel, NN, CNNCifar#, CNNCifar
 from sklearn.metrics import f1_score, accuracy_score
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
@@ -26,7 +26,8 @@ def DNNTrain(model, trn_data, epoch=1, batch_size=128, lr=0.1, loss_func=None,
         model.fit(X_train, y_train)
         
     elif type(model) == CNN or type(model) == RegressionModel or \
-    type(model) == LinearAttackModel or type(model) == SoftmaxRegressionModel:
+    type(model) == LinearAttackModel or type(model) == NN or \
+    type(model) == CNNCifar:
         device = torch.device(
             'cuda:{}'.format(find_free_gpu()) \
                 if torch.cuda.is_available() else 'cpu'
@@ -50,11 +51,14 @@ def DNNTrain(model, trn_data, epoch=1, batch_size=128, lr=0.1, loss_func=None,
         model.train()
         for (n,p) in model.named_parameters():
             p.requires_grad = True
-        optimizer = torch.optim.SGD(
-            model.parameters(),
-            lr= lr,
-            momentum = momentum,
-            weight_decay = weight_decay)
+        if type(model) == NN:
+            optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+        else:
+            optimizer = torch.optim.SGD(
+                model.parameters(),
+                lr= lr,
+                momentum = momentum,
+                weight_decay = weight_decay)
         
         convergeFlag = False
         val_results = []
@@ -135,7 +139,8 @@ def DNNTest(model, testData, test_bs=128,
             print("targets: ", y_test.tolist())
             
     elif type(model) == CNN or type(model) == RegressionModel or \
-    type(model) == LinearAttackModel or type(model) == SoftmaxRegressionModel:
+    type(model) == LinearAttackModel or type(model) == NN or \
+    type(model) == CNNCifar:
         
         param = list(model.parameters())[0]
         if 'cuda' in str(param.device):

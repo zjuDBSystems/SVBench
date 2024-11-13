@@ -67,7 +67,7 @@ def args_parser():
 
     # model parameters
     parser.add_argument('--model_name', type=str, default='KNN',
-                        help="{KNN, CNN, Tree, Linear}")
+                        help="{KNN, CNN, NN, Linear}")
     parser.add_argument('--test_metric', type=str, default="tst_accuracy",
                         help="{tst_accuracy, tst_F1, tst_loss, prediction}")
     # KNN model parameters
