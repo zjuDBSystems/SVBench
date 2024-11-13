@@ -59,9 +59,9 @@ class Task():
             exit()
         return global_model
     
-    def utilityComputation (self, player_idxs):
-        gradient_approximation = self.args.gradient_approximation
-        testSampleSkip = self.args.testSampleSkip
+    def utilityComputation (self, player_idxs, 
+                            gradient_approximation=False,  
+                            testSampleSkip = False):
         startTime = time.time()
         utility_record_idx = str(sorted(player_idxs))
         if utility_record_idx in self.utility_records:
@@ -206,7 +206,7 @@ class Task():
             # self.preExp_statistic()
             # reinitialize!!!
             self.utility_records = {str([]):(0,0)}
-            SVtask = Shapley(player_num = len(self.players), 
+            SVtask = Shapley(players = self.players, 
                              taskUtilityFunc=self.utilityComputation, 
                              args = self.args)
             SVtask.CalSV()
@@ -278,7 +278,7 @@ class Task():
                 dict_utilityComputationTimeCost[ridx] = self.preExp_statistic()
                 # reinitialize!!!
                 self.utility_records = {str([]):(0,0)}
-                SVtask = Shapley(player_num = len(self.players), 
+                SVtask = Shapley(players = self.players, 
                                  taskUtilityFunc=self.utilityComputation, 
                                  args = self.args)
                 SVtask.CalSV()
