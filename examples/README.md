@@ -20,44 +20,47 @@ python -u data_preparation.py --dataset=wine --num_classes=3 --num_trainDatasets
 
 ### Task Running
 
-1.   Using `MC` method to calculate SVs for all tuples in the dataset.
+```shell
+#  model: Linear | method: MC | dataset: Iris
+nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MC --sampling_strategy=random --convergence_threshold=0.01 --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_Iris_MC_Linear.log > logs/DV_Iris_MC_Linear.log  &
+
+# model: Linear | method: MC | dataset: Iris | truncation | gradient_approximation
+nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MC --sampling_strategy=random --convergence_threshold=0.01 --truncation=True --truncationThreshold=0.01  --gradient_approximation=True --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_Iris_TGMC.log > logs/DV_Iris_TGMC.log &
+
+# model: NN | method: MC | dataset: Wine
+nohup python -u data_valuation.py --task=DV --model_name=NN --ep=60 --bs=16 --lr=0.01 --dataset=wine --num_classes=3 --num_feature=13 --data_allocation=0 --test_metric=tst_accuracy --method=MC --sampling_strategy=random --convergence_threshold=0.01 --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_wine_MC_NN.log > logs/DV_wine_MC_NN.log  &
+```
+
+1.   Using `MC` method with `truncation` and `gradient approximation` technology to calculate SVs for all tuples in the dataset.
 
      ```shell
-     nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MC --sampling_strategy=random --convergence_threshold=0.01 --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_Iris_MC.log > logs/DV_Iris_MC.log  &
+     nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MC --sampling_strategy=random --convergence_threshold=0.01 --truncation=True --truncationThreshold=0.01  --gradient_approximation=True --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_Iris_TGMC.log > logs/DV_Iris_TGMC.log & 
      
-     nohup python -u data_valuation.py --task=DV --model_name=Tree --tree_maxDepth=10 --ep=30 --bs=16 --lr=0.01 --dataset=wine --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MC --sampling_strategy=random --convergence_threshold=0.01 --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_wine_MC.log > logs/DV_wine_MC.log  &
+     nohup python -u data_valuation.py --task=DV --model_name=Tree --tree_maxDepth=10 --ep=30 --bs=16 --lr=0.01 --dataset=wine --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MC --sampling_strategy=random --convergence_threshold=0.01 --truncation=True --truncationThreshold=0.01  --gradient_approximation=True --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_wine_TGMC.log > logs/DV_wine_TGMC.log & 
      ```
 
-2.   Using `MC` method with `truncation` and `gradient approximation` technology to calculate SVs for all tuples in the dataset.
-
-     ```shell
-     nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MC --sampling_strategy=random --convergence_threshold=0.01 --truncation=True --truncationThreshold=0.01  --gradient_approximation=True --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_Iris_TGMC.log > logs/DV_Iris_TGMC.log & 
-     
-     nohup python -u data_valuation.py --task=DV --model_name=Tree --tree_maxDepth=10 --ep=30 --bs=16 --lr=0.01 --dataset=wine --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MC --sampling_strategy=random --convergence_threshold=0.01 --truncation=True --truncationThreshold=0.01  --gradient_approximation=True --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_wine_TGMC.log > logs/DV_wine_TGMC.log & 
-     ```
-
-3.   Using `CP` method to calculate SVs for all tuples in the dataset.
+2.   Using `CP` method to calculate SVs for all tuples in the dataset.
 
      ```sh
-     nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=CP --num_measurement=100 --CP_epsilon=0.01 --convergence_threshold=0.01 --sampling_strategy=random --manual_seed=42 --num_parallelThreads=20 --log_file=../../logs/DV_Iris_CP.log > ../../logs/DV_Iris_CP.log &
+     nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=CP --num_measurement=100 --CP_epsilon=0.01 --convergence_threshold=0.01 --sampling_strategy=random --manual_seed=42 --num_parallelThreads=20 --log_file=../../logs/DV_Iris_CP.log > ../../logs/DV_Iris_CP.log &
      
-     nohup python -u data_valuation.py --task=DV --model_name=Tree --tree_maxDepth=10 --ep=30 --bs=16 --lr=0.01 --dataset=wine --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=CP --num_measurement=100 --CP_epsilon=0.01 --convergence_threshold=0.01 --sampling_strategy=random --manual_seed=42 --num_parallelThreads=20 --log_file=../../logs/DV_wine_CP.log > ../../logs/DV_wine_CP.log &
+     nohup python -u data_valuation.py --task=DV --model_name=Tree --tree_maxDepth=10 --ep=30 --bs=16 --lr=0.01 --dataset=wine --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=CP --num_measurement=100 --CP_epsilon=0.01 --convergence_threshold=0.01 --sampling_strategy=random --manual_seed=42 --num_parallelThreads=20 --log_file=../../logs/DV_wine_CP.log > ../../logs/DV_wine_CP.log &
      ```
 
-4.   Using `MLE` method to calculate SVs for all tuples in the dataset.
+3.   Using `MLE` method to calculate SVs for all tuples in the dataset.
 
      ```sh
-     nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MLE --MLE_maxInterval=15000 --convergence_threshold=0.01 --sampling_strategy=random  --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_Iris_MLE.log > logs/DV_Iris_MLE.log &
+     nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MLE --MLE_maxInterval=15000 --convergence_threshold=0.01 --sampling_strategy=random  --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_Iris_MLE.log > logs/DV_Iris_MLE.log &
      
-     nohup python -u data_valuation.py --task=DV --model_name=Tree --tree_maxDepth=10 --ep=30 --bs=16 --lr=0.01 --dataset=wine --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MLE --MLE_maxInterval=15000 --convergence_threshold=0.01 --sampling_strategy=random  --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_wine_MLE.log > logs/DV_wine_MLE.log &
+     nohup python -u data_valuation.py --task=DV --model_name=Tree --tree_maxDepth=10 --ep=30 --bs=16 --lr=0.01 --dataset=wine --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=MLE --MLE_maxInterval=15000 --convergence_threshold=0.01 --sampling_strategy=random  --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_wine_MLE.log > logs/DV_wine_MLE.log &
      ```
 
-5.   Using `GT` method to calculate SVs for all tuples in the dataset.
+4.   Using `GT` method to calculate SVs for all tuples in the dataset.
 
      ```sh
-     nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=GT --GT_epsilon=0.00001 --convergence_threshold=0.01 --sampling_strategy=random --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_Iris_GT.log > logs/DV_Iris_GT_.log &
+     nohup python -u data_valuation.py --task=DV --model_name=Linear --ep=30 --bs=16 --lr=0.01 --dataset=iris --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=GT --GT_epsilon=0.00001 --convergence_threshold=0.01 --sampling_strategy=random --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_Iris_GT.log > logs/DV_Iris_GT_.log &
      
-     nohup python -u data_valuation.py --task=DV --model_name=Tree --tree_maxDepth=10 --ep=30 --bs=16 --lr=0.01 --dataset=wine --num_class=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=GT --GT_epsilon=0.00001 --convergence_threshold=0.01 --sampling_strategy=random --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_wine_GT.log > logs/DV_wine_GT_.log &
+     nohup python -u data_valuation.py --task=DV --model_name=Tree --tree_maxDepth=10 --ep=30 --bs=16 --lr=0.01 --dataset=wine --num_classes=3 --num_feature=4 --data_allocation=0 --test_metric=tst_accuracy --method=GT --GT_epsilon=0.00001 --convergence_threshold=0.01 --sampling_strategy=random --manual_seed=42 --num_parallelThreads=20 --log_file=logs/DV_wine_GT.log > logs/DV_wine_GT_.log &
      ```
 
 ## Federated Learning(FL) Task
