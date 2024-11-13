@@ -803,6 +803,8 @@ class Shapley():
         # el
         if self.method in ['EXACT', 'MC']:
             base_compFunc = self.MC
+            if self.method == 'EXACT':
+                self.args.convergence_threshold=0
         elif self.method == 'RE':
             base_compFunc = self.RE
         elif self.method == 'MLE':
@@ -819,8 +821,8 @@ class Shapley():
             print('The task\'s emptySet utility: ', self.emptySet_utility)
 
         self.startTime = time.time()
-        if self.args.convergence_threshold == 0:
-            self.computeAllSubsetUtility()
+        #if self.args.convergence_threshold == 0:
+        #    self.computeAllSubsetUtility()
 
         base_compFunc(sampling_strategy=self.sampling_strategy,
                       truncation=self.truncationFlag)
