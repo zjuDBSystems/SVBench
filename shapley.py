@@ -86,7 +86,7 @@ class Shapley():
         selected_players = np.random.choice(
             range(N), int(k), replace=False)
         while ",".join(map(str, sorted(selected_players))) in exclude_list:
-            k = np.random.choice(range(1, N), p=q_k, size=1)
+            k = np.random.choice(range(1, N), size=1)#p=q_k, 
             selected_players = np.random.choice(
                 range(N), int(k), replace=False)
         return selected_players
@@ -801,7 +801,7 @@ class Shapley():
         # setting the convergence conditions in MC
         #    self.Exact()
         # el
-        if self.method in ['exact', 'MC']:
+        if self.method in ['EXACT', 'MC']:
             base_compFunc = self.MC
         elif self.method == 'RE':
             base_compFunc = self.RE
