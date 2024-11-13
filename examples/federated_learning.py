@@ -5,7 +5,7 @@ Created on Wed Aug  7 16:23:58 2024
 @author: admin
 """
 
-from SV import Shapley
+from shapley import Shapley
 from arguments import args_parser
 import numpy as np
 import torch, copy, time, sys, threading
@@ -59,9 +59,9 @@ class Task():
             exit()
         return global_model
     
-    def utilityComputation (self, player_idxs, 
-                            gradient_approximation=False,  
-                            testSampleSkip = False):
+    def utilityComputation (self, player_idxs):
+        gradient_approximation = self.args.gradient_approximation
+        testSampleSkip = self.args.testSampleSkip
         startTime = time.time()
         utility_record_idx = str(sorted(player_idxs))
         if utility_record_idx in self.utility_records:
@@ -206,7 +206,7 @@ class Task():
             # self.preExp_statistic()
             # reinitialize!!!
             self.utility_records = {str([]):(0,0)}
-            SVtask = Shapley(players = self.players, 
+            SVtask = Shapley(player_num = len(self.players), 
                              taskUtilityFunc=self.utilityComputation, 
                              args = self.args)
             SVtask.CalSV()
@@ -278,7 +278,7 @@ class Task():
                 dict_utilityComputationTimeCost[ridx] = self.preExp_statistic()
                 # reinitialize!!!
                 self.utility_records = {str([]):(0,0)}
-                SVtask = Shapley(players = self.players, 
+                SVtask = Shapley(player_num = len(self.players), 
                                  taskUtilityFunc=self.utilityComputation, 
                                  args = self.args)
                 SVtask.CalSV()

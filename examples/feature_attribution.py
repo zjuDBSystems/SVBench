@@ -5,7 +5,7 @@ Created on Wed Aug  7 16:23:58 2024
 @author: admin
 """
 
-from SV import Shapley
+from shapley import Shapley
 from arguments import args_parser
 import torch, time 
 import numpy as np
@@ -139,8 +139,9 @@ class Task():
                     metric = self.args.test_metric)
             )
     
-    def utilityComputation(self, player_idxs, gradient_approximation=False, 
-                           testSampleSkip = False):
+    def utilityComputation(self, player_idxs):
+        gradient_approximation = self.args.gradient_approximation
+        testSampleSkip = self.args.testSampleSkip
         player_idxs = sorted(player_idxs)
         startTime = time.time()
         utility_record_idx = str(player_idxs)
@@ -300,7 +301,7 @@ class Task():
                 # reinitialize!!!
                 self.utility_records = {str([]):(0,0)}
                 # formal exp
-                SVtask = Shapley(players = self.players, 
+                SVtask = Shapley(player_num = len(self.players), 
                                  taskUtilityFunc=self.utilityComputation, 
                                  args = self.args)
                 SVtask.CalSV()
@@ -336,7 +337,7 @@ class Task():
                 # reinitialize!!!
                 self.utility_records = {str([]):(0,0)}
                 # formal exp
-                SVtask = Shapley(players = self.players, 
+                SVtask = Shapley(player_num = len(self.players), 
                                  taskUtilityFunc=self.utilityComputation, 
                                  args = self.args)
                 SVtask.CalSV()
