@@ -195,6 +195,9 @@ class Task():
         thread.daemon = True
         thread.start()
 
+        if self.args.gradient_approximation:
+            self.args.num_parallelThreads=1
+            
         self.preExp_statistic()
         # reinitialize!!!
         self.utility_records = {str([]): (0, 0)}
