@@ -139,9 +139,8 @@ class Task():
                     metric = self.args.test_metric)
             )
     
-    def utilityComputation(self, player_idxs):
-        gradient_approximation = self.args.gradient_approximation
-        testSampleSkip = self.args.testSampleSkip
+    def utilityComputation(self, player_idxs, gradient_approximation=False, 
+                           testSampleSkip = False):
         player_idxs = sorted(player_idxs)
         startTime = time.time()
         utility_record_idx = str(player_idxs)
@@ -301,7 +300,7 @@ class Task():
                 # reinitialize!!!
                 self.utility_records = {str([]):(0,0)}
                 # formal exp
-                SVtask = Shapley(player_num = len(self.players), 
+                SVtask = Shapley(players = self.players, 
                                  taskUtilityFunc=self.utilityComputation, 
                                  args = self.args)
                 SVtask.CalSV()
@@ -337,7 +336,7 @@ class Task():
                 # reinitialize!!!
                 self.utility_records = {str([]):(0,0)}
                 # formal exp
-                SVtask = Shapley(player_num = len(self.players), 
+                SVtask = Shapley(players = self.players, 
                                  taskUtilityFunc=self.utilityComputation, 
                                  args = self.args)
                 SVtask.CalSV()
