@@ -374,7 +374,7 @@ class Task():
     
     def preExp_statistic(self):
         utilityComputationTimeCost=dict()
-        for player_idx in range(len(self.players)):
+        for player_idx in range(len(self.players)+1):
             utility, timeCost = self.utilityComputation(
                 range(player_idx))
             print('Computing utility %s for %s players tasks %s timeCost...'%(
