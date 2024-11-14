@@ -12,7 +12,7 @@ import numpy as np
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-from models.Nets import  RegressionModel, CNN#, CNNCifar
+from models.Nets import  RegressionModel, CNN, NN#, CNNCifar
 from ML_utils import DNNTrain, DNNTest, find_free_gpu
 #from torch.utils.data import DataLoader
 from functools import reduce
@@ -197,7 +197,7 @@ class Task():
             utility = predictions.sum()/reduce((lambda x,y:x*y),predictions.shape)
             
         
-        elif self.model_name in ['CNN', 'Linear']:
+        elif self.model_name in ['CNN', 'Linear', 'NN']:
             # model testing (maybe expedited by some ML speedup functions)
             results = queue.Queue()
             for order, replace_val in enumerate(baselines):
@@ -216,7 +216,8 @@ class Task():
             
         else:
             # DA with other types of ML models are left for future experiments
-            pass
+            print('Note: DA with other types of ML models'+\
+                  'are left for future experiments!')
         
         endTime = time.time()
         self.utility_records[utility_record_idx] = (utility, endTime-startTime)
@@ -247,9 +248,11 @@ class Task():
                           metric = 'tst_accuracy', 
                           pred_print = True)
                   )
-        elif self.model_name in ['CNN', 'Linear']:
+        elif self.model_name in ['CNN', 'Linear', 'NN']:
             if self.model_name == 'CNN':
                 self.model = CNN(args=self.args)
+            elif self.model_name == 'NN':
+                self.model = NN(args=self.args)
             else:
                 self.model = RegressionModel(args=self.args)
             loss_func = torch.nn.CrossEntropyLoss()
@@ -296,6 +299,9 @@ class Task():
                 self.utility_records = {str([]):(0,0)}
                 self.X_test = complete_X_test[test_idx:test_idx+1]
                 self.y_test = complete_y_test[test_idx:test_idx+1]
+                if len(self.players)<15:
+                    print('\n test sample data: ', self.X_test,
+                          '\n test sample label: ', self.y_test)
                 dict_utilityComputationTimeCost[test_idx] = self.preExp_statistic()
                 # reinitialize!!!
                 self.utility_records = {str([]):(0,0)}
@@ -315,7 +321,9 @@ class Task():
             
             # select test samples 
             selected_test_samples = []
-            if len(self.Tst) > len( np.unique(self.Tst.labels))*10:
+            if False not in [
+                    len(np.where(self.Tst.labels.numpy()==label)[0]) > 10 \
+                        for label in np.unique(self.Tst.labels)]: 
                 for label in np.unique(self.Tst.labels):
                     selected_test_samples += np.random.choice(
                         np.where(self.Tst.labels.numpy()==label)[0], 
@@ -328,6 +336,9 @@ class Task():
                 # compute SV for only selected test samples for saving time cost
                 if test_idx not in selected_test_samples:
                     continue
+                if len(self.players)<15:
+                    print('\n test sample data: ', self.Tst.dataset[test_idx],
+                          '\n test sample label: ', self.Tst.labels[test_idx])
                 # reinitialize!!!
                 self.utility_records = {str([]):(0,0)}
                 self.Tst.idxs = complete_Tst_idx[test_idx:test_idx+1]
@@ -364,10 +375,10 @@ class Task():
     def preExp_statistic(self):
         utilityComputationTimeCost=dict()
         for player_idx in range(len(self.players)):
-            _, timeCost = self.utilityComputation(
+            utility, timeCost = self.utilityComputation(
                 range(player_idx))
-            print('Computing utility for %s players tasks %s timeCost...'%(
-                player_idx, timeCost))
+            print('Computing utility %s for %s players tasks %s timeCost...'%(
+                utility, player_idx, timeCost))
             utilityComputationTimeCost[player_idx] = timeCost
         print('Average time cost for computing utility: ',
               np.mean(list(utilityComputationTimeCost.values())))
