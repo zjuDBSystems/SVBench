@@ -317,7 +317,7 @@ class Task():
         self.utility_records = {str([]):(0,0)}
         # pre-experiment statistics
         utilityComputationTimeCost=dict()
-        for player_idx in range(len(task.players)):
+        for player_idx in range(len(task.players)+1):
             
             _, timeCost = task.utilityComputation(
                 range(player_idx), 
