@@ -7,7 +7,6 @@ Created on Wed Aug  7 21:35:23 2024
 import torch,copy
 
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import f1_score, accuracy_score
 from models.Nets import  CNN, RegressionModel, LinearAttackModel, NN, CNNCifar#, CNNCifar
 from sklearn.metrics import f1_score, accuracy_score
@@ -20,8 +19,7 @@ def DNNTrain(model, trn_data, epoch=1, batch_size=128, lr=0.1, loss_func=None,
              momentum=0, weight_decay=0, max_norm=5, 
              validation_metric='tst_accuracy', loss_print=False):
     model = copy.deepcopy(model)
-    if type(model) == KNeighborsClassifier or\
-    type(model)==DecisionTreeClassifier:
+    if type(model) == KNeighborsClassifier:
         X_train, y_train = trn_data
         model.fit(X_train, y_train)
         
@@ -112,8 +110,7 @@ def DNNTest(model, testData, test_bs=128,
             recordSkippableSample = None, pred_print=False):
     
     # model testing (maybe expedited by some ML speedup functions)
-    if type(model) == KNeighborsClassifier or\
-    type(model)==DecisionTreeClassifier:
+    if type(model) == KNeighborsClassifier:
         X_test, y_test = testData
         # predict
         predictions = model.predict(X_test)

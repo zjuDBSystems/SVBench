@@ -12,7 +12,6 @@ import time
 import numpy as np
 
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
 from models.Nets import RegressionModel, CNN, NN  # , CNNCifar
 from ML_utils import DNNTrain, DNNTest, find_free_gpu
 # from torch.utils.data import DataLoader
@@ -127,7 +126,7 @@ class Task():
                               test_bs=len(self.y_test),
                               metric=self.args.test_metric)
 
-        elif self.model_name in ['CNN', 'Linear', 'Tree', 'NN']:
+        elif self.model_name in ['CNN', 'Linear', 'NN']:
             # model initialize and training
             if not gradient_approximation or type(self.model) == type(None) or\
                     len(player_idxs) <= 0:
@@ -137,12 +136,6 @@ class Task():
                     self.model = CNN(args=self.args)
                 elif self.model_name == 'Linear':
                     self.model = RegressionModel(args=self.args)
-                elif self.model_name == 'Tree':
-                    self.model = DecisionTreeClassifier(
-                        criterion='entropy',
-                        random_state=self.args.manual_seed,
-                        max_depth=self.args.tree_maxDepth
-                    )
                 elif self.model_name == 'NN':
                     self.model = NN(args=self.args)
 
@@ -194,6 +187,9 @@ class Task():
         thread = threading.Thread(target=task.printFlush)
         thread.daemon = True
         thread.start()
+
+        if self.args.gradient_approximation:
+            self.args.num_parallelThreads=1
 
         self.preExp_statistic()
         # reinitialize!!!

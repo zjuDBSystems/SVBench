@@ -214,9 +214,9 @@ class Shapley():
             # speed up by multiple threads
             convergence_diff = dict()
             threads = []
-            for odd_even in [0, 1]:
+            for odd_even in ([0, 1] if self.args.num_parallelThreads > 1 else [0]):
                 for order, player_id in enumerate(permutation):
-                    if order % 2 != odd_even:
+                    if order % 2 != odd_even and self.args.num_parallelThreads > 1:
                         continue
                     if player_id not in self.targetedplayer_id:
                         # use self.args.convergence_threshold (instead of 0) for avoiding
@@ -576,9 +576,9 @@ class Shapley():
             # speed up by multiple threads
             phi_t = dict()
             threads = []
-            for odd_even in [0, 1]:
+            for odd_even in ([0, 1] if self.args.num_parallelThreads > 1 else [0]):
                 for order, player_id in enumerate(permutation):
-                    if order % 2 != odd_even:
+                    if order % 2 != odd_even and self.args.num_parallelThreads > 1:
                         continue
                     thread = threading.Thread(
                         target=self.PlayerIteration,
