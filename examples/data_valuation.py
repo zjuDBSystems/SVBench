@@ -67,8 +67,9 @@ class Task():
             self.X_test = np.array(self.X_test)
             self.y_test = np.array(self.y_test)
             
-    def utilityComputation(self, player_idxs, gradient_approximation=False, 
-                           testSampleSkip = False):
+    def utilityComputation(self, player_idxs):
+        gradient_approximation = self.args.gradient_approximation
+        test_sample_skip = self.args.test_sample_skip
         if self.args.tuple_to_set>0:
             # invoked when the valuation target is the data set 
             all_data_tuple_idx = []
@@ -175,8 +176,8 @@ class Task():
         self.preExp_statistic()
         # reinitialize!!!
         self.utility_records = {str([]):(0,0)}
-        SVtask = Shapley(players = self.players, 
-                         taskUtilityFunc=self.utilityComputation, 
+        SVtask = Shapley(player_num = len(self.players),
+                         task_utility_func=self.utilityComputation, 
                          args = self.args)
         SVtask.CalSV()
         self.taskTerminated = True
@@ -188,12 +189,9 @@ class Task():
         utilityComputationTimeCost=dict()
         for player_idx in range(len(self.players)+1):
             
-            _, timeCost = self.utilityComputation(
-                range(player_idx), 
-                gradient_approximation=self.args.gradient_approximation,
-                testSampleSkip=self.args.testSampleSkip)
-            print('Computing utility with %s players tasks %s timeCost...'%(
-                player_idx, timeCost))
+            utility, timeCost = self.utilityComputation(range(player_idx))
+            print('Computing utility with %s players tasks %s timeCost %s utility...'%(
+                player_idx, timeCost, utility))
             utilityComputationTimeCost[player_idx] = timeCost
         print('Average time cost for computing utility: ',
               np.mean(list(utilityComputationTimeCost.values())))
