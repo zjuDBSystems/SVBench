@@ -281,11 +281,13 @@ class Task():
             
             # select test samples 
             selected_test_samples = []
-            if len(self.Tst) > len( np.unique(self.Tst.labels))*10:
-                for label in np.unique(self.y_test):
+            if False not in [
+                    len(np.where(complete_y_test==label)[0]) > 3 \
+                        for label in np.unique(complete_y_test)]: 
+                for label in np.unique(complete_y_test):
                     selected_test_samples += np.random.choice(
-                        np.where(self.y_test==label)[0], 
-                        10, replace=False).tolist() # select 10 samples in each class
+                        np.where(complete_y_test==label)[0], 
+                        3, replace=False).tolist() # select 3 samples in each class
             else:
                 selected_test_samples = range(len(complete_X_test))
             
@@ -322,12 +324,12 @@ class Task():
             # select test samples 
             selected_test_samples = []
             if False not in [
-                    len(np.where(self.Tst.labels.numpy()==label)[0]) > 10 \
+                    len(np.where(self.Tst.labels.numpy()==label)[0]) > 3 \
                         for label in np.unique(self.Tst.labels)]: 
                 for label in np.unique(self.Tst.labels):
                     selected_test_samples += np.random.choice(
                         np.where(self.Tst.labels.numpy()==label)[0], 
-                        10, replace=False).tolist() # select 10 samples in each class
+                        3, replace=False).tolist() # select 10 samples in each class
             else:
                 selected_test_samples = range(len(complete_Tst_idx))
                 
