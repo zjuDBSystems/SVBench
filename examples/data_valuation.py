@@ -22,11 +22,14 @@ class Task():
         free_gpu = find_free_gpu() #int(all_gpus[0])
         self.device = torch.device(
             'cuda:{}'.format(free_gpu) \
-                if free_gpu >= 0 and torch.cuda.is_available() else 'cpu'
+                if torch.cuda.is_available() else 'cpu'
                 )
             
         # DA task settings
-        self.task = args.task
+        self.task = args.task + \
+                    ('-n' if args.dataNormalize else '') +\
+                    ('-maxIter%s'%args.scannedIter_maxNum \
+                     if args.scannedIter_maxNum!=np.inf else "")
         self.model = None
         self.model_name = args.model_name
         
@@ -52,7 +55,7 @@ class Task():
         self.writingUtility = False
         self.readingUtility = False
         self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s_GA-%s.json'%(
-                self.args.task, self.args.dataset, 
+                self.task, self.args.dataset, 
                 self.args.manual_seed, self.args.gradient_approximation)
         self.utility_records = self.readUtilityRecords()
         self.record_interval = 5*len(self.players)
@@ -126,8 +129,14 @@ class Task():
             
     def utilityComputation(self, player_idxs, gradient_approximation=False, 
                            testSampleSkip = False):
+        # server for MIA (no use in the other cases)
+        player_idxs = [self.trn_data.idxs[pidx] \
+                       for pidx in player_idxs] 
+        #if len(self.trn_data.idxs) == len(player_idxs):
+        #    print('trn data idxs:', player_idxs)
+            
+        # invoked when the valuation target is the data set 
         if self.args.tuple_to_set>0:
-            # invoked when the valuation target is the data set 
             all_data_tuple_idx = []
             for pidx in player_idxs:
                 all_data_tuple_idx += self.players[pidx]
@@ -229,7 +238,7 @@ class Task():
             
             
     def run(self):
-        thread = threading.Thread(target=task.printFlush)
+        thread = threading.Thread(target=self.printFlush)
         thread.daemon = True
         thread.start()
         
@@ -244,6 +253,7 @@ class Task():
         SVtask.CalSV()
         self.taskTerminated = True
         #thread.join()
+        return SVtask.SV
         
     def preExp_statistic(self):
         # pre-experiment statistics
