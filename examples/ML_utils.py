@@ -25,9 +25,10 @@ def DNNTrain(model, trn_data, epoch=1, batch_size=128, lr=0.1, loss_func=None,
         
     elif type(model) == CNN or type(model) == CNNCifar or type(model) == NN or \
         type(model) == RegressionModel or type(model) == LinearAttackModel:
+        free_gpu = find_free_gpu()
         device = torch.device(
-            'cuda:{}'.format(find_free_gpu()) \
-                if torch.cuda.is_available() else 'cpu'
+            'cuda:{}'.format(free_gpu) \
+                if free_gpu >= 0 and torch.cuda.is_available() else 'cpu'
                 )
         model = model.to(device)
         
@@ -142,9 +143,10 @@ def DNNTest(model, testData, test_bs=128,
             device = param.device
             
         else:
+            free_gpu = find_free_gpu()
             device = torch.device(
-                'cuda:{}'.format(find_free_gpu()) \
-                    if torch.cuda.is_available() else 'cpu'
+                'cuda:{}'.format(free_gpu) \
+                    if free_gpu >= 0 and torch.cuda.is_available() else 'cpu'
                     )
         del param
         

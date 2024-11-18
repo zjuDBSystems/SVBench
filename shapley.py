@@ -57,7 +57,7 @@ class Shapley():
         self.timeCost_per_utility_comp = []
 
     def clearLogFile(self):
-        lines = [line for line in open(self.args.log_file, 'r').readlines()\
+        lines = [line for line in open(self.args.log_file, 'r', errors='ignore').readlines()\
                  if 'Done' not in line and len(line.replace(' ','').strip())>0] 
         with open(self.args.log_file, 'w') as log_file:
             log_file.writelines(lines)

@@ -23,7 +23,7 @@ class Task():
         free_gpu = find_free_gpu() #int(all_gpus[0])
         self.device = torch.device(
             'cuda:{}'.format(free_gpu) \
-                if torch.cuda.is_available() else 'cpu'
+                if free_gpu >= 0 and torch.cuda.is_available() else 'cpu'
                 )
             
         # DA task settings
