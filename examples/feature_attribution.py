@@ -125,6 +125,9 @@ class Task():
         self.y_test = np.array(self.y_test)
         self.complete_y_test = copy.deepcopy(self.y_test)
         
+        # player setting
+        self.players = [feature_idx \
+                        for feature_idx in range(self.Tst[0][0].reshape(-1).shape[-1])]
         # select test samples 
         self.num_samples_each_class = 1 # select only one sample in each class
         self.selected_test_samples = []
@@ -141,9 +144,6 @@ class Task():
         else:
             self.selected_test_samples = range(len(self.complete_X_test))
         
-        # player setting
-        self.players = [feature_idx \
-                        for feature_idx in range(self.Tst[0][0].reshape(-1).shape[-1])]
         # utility setting
         self.writingUtility = False
         self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s.json'%(
@@ -158,7 +158,13 @@ class Task():
         #self.skippableTestSample = dict([(player_id, set()) \
         #                for player_id in range(len(self.players))])
         
-    
+        
+        # prepare trained model
+        self.trainModel()
+        
+        # used only by FIA
+        self.randomSet = []
+        
     def readUtilityRecords(self, emptySet_utility = None):
         if type(emptySet_utility)==type(None):
             emptySet_utility =  {str([]):(0,0)}
@@ -317,7 +323,11 @@ class Task():
             time.sleep(5)
             
     def trainModel(self):
-        model_path = 'models/attribution_%s-%s.pt'%(self.task,self.args.dataset)
+        model_path = 'models/attribution_%s-%s.pt'%(
+            self.task, 
+            (self.args.dataset if self.args.manual_seed==42 \
+             else (self.args.dataset+"-"+str(self.args.manual_seed)))
+                )
         if os.path.exists(model_path) and\
         self.args.modelRetrain == False:
             self.model = torch.load(model_path, map_location=self.device)
@@ -376,7 +386,6 @@ class Task():
         thread.daemon = True
         thread.start()
         
-        self.trainModel()
         
         self.testSampleFeatureSV = dict()
         dict_utilityComputationTimeCost = dict()
@@ -395,7 +404,11 @@ class Task():
                 dict_utilityComputationTimeCost[test_idx] = self.preExp_statistic()
                 # reinitialize!!!
                 self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s_Idx%s.json'%(
-                        self.task, self.args.dataset, 
+                        self.task, 
+                        (self.args.dataset if test_idx not in self.randomSet \
+                         else (self.args.dataset + time.strftime(
+                             '%Y-%m-%d-%H-%M-%S',time.localtime(
+                                 int(round(time.time()*1000))/1000)))), 
                         self.args.manual_seed, test_idx)
                 self.utility_records = self.readUtilityRecords()
                 self.record_count = len(self.utility_records)//self.record_interval
@@ -430,7 +443,11 @@ class Task():
                 dict_utilityComputationTimeCost[test_idx] = self.preExp_statistic()
                 # reinitialize!!!
                 self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s_Idx%s.json'%(
-                        self.task, self.args.dataset, 
+                        self.task, 
+                        (self.args.dataset if test_idx not in self.randomSet \
+                         else (self.args.dataset + time.strftime(
+                             '%Y-%m-%d-%H-%M-%S',time.localtime(
+                                 int(round(time.time()*1000))/1000)))), 
                         self.args.manual_seed, test_idx)
                 self.utility_records = self.readUtilityRecords()
                 self.record_count = len(self.utility_records)//self.record_interval
