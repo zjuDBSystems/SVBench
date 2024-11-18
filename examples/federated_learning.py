@@ -8,7 +8,7 @@ Created on Wed Aug  7 16:23:58 2024
 from shapley import Shapley
 from arguments import args_parser
 import numpy as np
-import torch, copy, time, sys, threading
+import torch, copy, time, sys, threading, json, portalocker, os
 torch.backends.cudnn.enabled = False
 from models.Nets import  CNN, CNNCifar
 from ML_utils import DNNTrain, DNNTest, find_free_gpu
@@ -42,12 +42,128 @@ class Task():
                 #map_location=self.device
                 ) \
             for no in range(self.args.num_clients)]
+            
+        model_paths = ['models/FL_%s_R%sC%s.pt'%(self.args.dataset,
+                                                 ridx, trainer_idx) \
+                       for ridx in range(self.args.maxRound) \
+                           for trainer_idx in range(len(self.players))]
+        if False not in [os.path.exists(model_path)\
+                         for model_path in model_paths] and\
+        self.args.modelRetrain == False:
+            pass # all needed models have been trained 
         
+        else:
+            # model initialize and training 
+            # (can be expedited by the above ML speedup functions)
+            # FedAvg
+            global_model = self.modelInitiation()
+            loss_func = torch.nn.CrossEntropyLoss()
+            for ridx in range(self.args.maxRound):
+                localUpdates = dict()
+                p_k = dict()
+                start_time = time.time()
+                for player_idx in range(len(self.players)):
+                    # local model training
+                    pstar_time = time.time()
+                    localUpdates[player_idx] =  DNNTrain(
+                        global_model, self.players[player_idx], 
+                        self.args.local_ep, self.args.local_bs,
+                        self.args.lr*(self.args.decay_rate**ridx), loss_func,
+                        momentum=self.args.momentum, 
+                        weight_decay=self.args.weight_decay, 
+                        max_norm=self.args.max_norm, 
+                        #device=self.device
+                        ).state_dict()
+                    p_k [player_idx] = len(self.players[player_idx])
+                    torch.save(localUpdates[player_idx],
+                               'models/FL_%s_R%sC%s.pt'%(self.args.dataset, 
+                                                         ridx, player_idx)
+                               )
+                    torch.cuda.empty_cache()
+                    print('Round %s player %s time cost:'%(ridx, player_idx),
+                          time.time()-pstar_time)
+                    sys.stdout.flush()
+                # aggregation
+                AggResults = self.WeightedAvg(localUpdates, p_k)  
+                global_model.load_state_dict(AggResults)
+                print('Round %s time cost: ', time.time()-start_time)
+                
+        self.player_data_size = [len(self.players[no])\
+                                 for no in range(self.args.num_clients)]
+        self.players = [
+            dict([
+                (ridx, 
+                 torch.load('models/FL_%s_R%sC%s.pt'%(self.args.dataset, 
+                                                      ridx, no), 
+                            map_location=self.device)) \
+                    for ridx in range(self.args.maxRound)]) \
+                for no in range(self.args.num_clients)]
+            
         # utility setting
-        self.utility_records = {str([]):(0,0)}
+        self.writingUtility = False
+        self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s_GA-%s%s.json'%(
+                self.args.task, self.args.dataset, 
+                self.args.manual_seed, self.args.gradient_approximation,
+                (self.args.testSampleSkip if self.args.testSampleSkip else ""))
+        self.utility_records = self.readUtilityRecords()
+        if self.args.gradient_approximation:
+            self.record_interval = 2*len(self.players)
+        else:
+            self.record_interval = 2 
+        self.record_count = len(self.utility_records)//self.record_interval
         self.skippableTestSample = dict([(player_id, set()) \
                         for player_id in range(len(self.players))])
+        print('len(utility): ', len(self.utility_records),
+              self.utility_file_path)
         
+    
+    def readUtilityRecords(self, emptySet_utility = None):
+        if type(emptySet_utility)==type(None):
+            emptySet_utility =  {str([]):(0,0)}
+            
+        if not os.path.exists(self.utility_file_path):
+            return emptySet_utility
+        
+        if not os.path.exists(self.utility_file_path):
+            os.mknod(self.utility_file_path)
+        with open(self.utility_file_path, 'r',
+                  encoding='utf-8') as file:
+            portalocker.lock(file, 
+                             portalocker.LOCK_SH)#lock
+            utilities = eval(file.read().strip())
+            portalocker.unlock(file)
+            
+        return utilities
+    
+    def writeUtilityRecord(self):
+        #print(self.utility_file_path,len(self.utility_records),self.record_count)
+        if not self.writingUtility and\
+        len(self.utility_records)-1 > (self.record_count+1)*self.record_interval:
+            
+            self.writingUtility = True
+            create = False
+            if not os.path.exists(self.utility_file_path):
+                os.mknod(self.utility_file_path)
+                create = True
+            with portalocker.Lock(self.utility_file_path,
+                                  mode="r+", 
+                                  timeout=300)  as file:
+                # copy is necessary under multi-thread environment
+                ur = self.utility_records.copy() 
+                if not create:
+                    ur.update(eval(file.read().strip()))
+                file.seek(0)
+                file.write(str(ur))
+                file.seek(0)
+                self.utility_records = eval(file.read().strip())
+                
+            
+            #print('\n', len(self.utility_records))
+            self.record_count = len(self.utility_records)//self.record_interval
+            
+            self.writingUtility = False
+            
+            
     def modelInitiation(self):
         global_model = None
         if self.args.dataset == 'cifar':
@@ -107,6 +223,7 @@ class Task():
             torch.cuda.empty_cache()
             endTime = time.time()
             self.utility_records[utility_record_idx] = (utility, endTime-startTime)
+            self.writeUtilityRecord()
             return self.utility_records[utility_record_idx]
         '''
         if len(player_idxs) <= 0:
@@ -125,7 +242,7 @@ class Task():
         # (can be expedited by the above ML speedup functions)
         # FedAvg
         global_model = self.modelInitiation()
-        loss_func = torch.nn.CrossEntropyLoss()
+        #loss_func = torch.nn.CrossEntropyLoss()
         for ridx in range(self.args.maxRound):
             localUpdates = dict()
             p_k = dict()
@@ -135,16 +252,8 @@ class Task():
                 #                       batch_size=self.args.local_bs, 
                 #                       shuffle=True)
                 #local_model = copy.deepcopy(global_model).to(self.device)
-                localUpdates[player_idx] =  DNNTrain(
-                    global_model, self.players[player_idx], 
-                    self.args.local_ep, self.args.local_bs,
-                    self.args.lr*(self.args.decay_rate**ridx), loss_func,
-                    momentum=self.args.momentum, 
-                    weight_decay=self.args.weight_decay, 
-                    max_norm=self.args.max_norm, 
-                    #device=self.device
-                    ).state_dict()
-                p_k [player_idx] = len(self.players[player_idx])
+                localUpdates[player_idx] =  self.players[player_idx][ridx]
+                p_k [player_idx] = self.player_data_size[player_idx]
                 
             # aggregation
             AggResults = self.WeightedAvg(localUpdates, p_k)  
@@ -168,6 +277,7 @@ class Task():
         torch.cuda.empty_cache()
         endTime = time.time()
         self.utility_records[utility_record_idx] = (utility, endTime-startTime)
+        self.writeUtilityRecord()
         
         return self.utility_records[utility_record_idx]
         
@@ -201,11 +311,10 @@ class Task():
         thread.daemon = True
         thread.start()
         
-        
         if not self.args.gradient_approximation:
             # self.preExp_statistic()
             # reinitialize!!!
-            self.utility_records = {str([]):(0,0)}
+            self.utility_records = self.readUtilityRecords()
             SVtask = Shapley(players = self.players, 
                              taskUtilityFunc=self.utilityComputation, 
                              args = self.args)
@@ -214,7 +323,7 @@ class Task():
             # model initialize and training 
             global_model = self.modelInitiation()
             round_SV = dict()
-            loss_func = torch.nn.CrossEntropyLoss()
+            #loss_func = torch.nn.CrossEntropyLoss()
             dict_utilityComputationTimeCost = dict()
             for ridx in range(self.args.maxRound):
                 localUpdates = dict()
@@ -224,17 +333,9 @@ class Task():
                     #                       batch_size=self.args.local_bs, 
                     #                       shuffle=True)
                     #local_model = copy.deepcopy(global_model).to(self.device)
-                    local_model = DNNTrain(
-                        global_model, self.players[player_idx], 
-                        self.args.local_ep, self.args.local_bs,
-                        self.args.lr*(self.args.decay_rate**ridx), loss_func,
-                        momentum=self.args.momentum, 
-                        weight_decay=self.args.weight_decay, 
-                        max_norm=self.args.max_norm, 
-                        #device=self.device
-                        ).state_dict()
+                    local_model = self.players[player_idx][ridx]
                     localUpdates[player_idx] = local_model
-                    p_k [player_idx] = len(self.players[player_idx])
+                    p_k [player_idx] = self.player_data_size[player_idx]
                     torch.cuda.empty_cache()
                     print('Round %s player %s done!'%(ridx, player_idx))
                     
@@ -277,7 +378,16 @@ class Task():
                     
                 dict_utilityComputationTimeCost[ridx] = self.preExp_statistic()
                 # reinitialize!!!
-                self.utility_records = {str([]):(0,0)}
+                self.utility_file_path = self.utility_file_path.replace(
+                                            '.json','-R%s.json'%ridx)
+                self.utility_records = self.readUtilityRecords(
+                                            {str([]):self.utility_records[str([])]}
+                                            )
+                self.record_count = len(self.utility_records)//self.record_interval
+                print(self.utility_file_path,
+                      'len(self.utility_records):', 
+                      len(self.utility_records))
+                
                 SVtask = Shapley(players = self.players, 
                                  taskUtilityFunc=self.utilityComputation, 
                                  args = self.args)
@@ -294,6 +404,8 @@ class Task():
                                       metric = self.args.test_metric),
                               time.time()-start_time)
                     }
+                self.utility_file_path = self.utility_file_path.replace(
+                                            '-R%s'%ridx,'')
                 
             print('Average time cost for computing utility (averged by all samples): ',
                   sum([np.sum(list(utilityComputationTimeCost.values()))\
@@ -317,7 +429,7 @@ class Task():
         self.utility_records = {str([]):(0,0)}
         # pre-experiment statistics
         utilityComputationTimeCost=dict()
-        for player_idx in range(len(task.players)+1):
+        for player_idx in range(len(task.players)):
             
             _, timeCost = task.utilityComputation(
                 range(player_idx), 
