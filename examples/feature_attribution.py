@@ -28,13 +28,23 @@ class Task():
                 )
             
         # FA task settings
-        self.task = args.task
+        self.task = args.task + \
+                    ('-n' if args.dataNormalize else '') +\
+                    ('-maxIter%s'%args.scannedIter_maxNum \
+                     if args.scannedIter_maxNum!=np.inf else "")
         self.model = None
         self.model_name = args.model_name
         self.Trn = torch.load('data/%s%s/train0.pt'%(
             args.dataset, args.data_allocation), 
             #map_location=self.device
             )
+        if args.dataNormalize:
+            shape =  self.Trn.dataset.shape
+            self.Trn.dataset = self.Trn.dataset.reshape((shape[0],-1))
+            min_vals, _ = torch.min(self.Trn.dataset, dim=0, keepdim=True)
+            max_vals, _ = torch.max(self.Trn.dataset, dim=0, keepdim=True)
+            self.Trn.dataset = (self.Trn.dataset - min_vals) / (max_vals - min_vals)
+            self.Trn.dataset = self.Trn.dataset.reshape(shape)
         
         #if self.model_name in ['KNN', 'Tree']:
         self.X_train = []
@@ -93,6 +103,14 @@ class Task():
             'data/%s%s/test.pt'%(args.dataset, args.data_allocation), 
             #map_location=self.device
             )
+        if args.dataNormalize:
+            shape =  self.Tst.dataset.shape
+            self.Tst.dataset = self.Tst.dataset.reshape((shape[0],-1))
+            min_vals, _ = torch.min(self.Tst.dataset, dim=0, keepdim=True)
+            max_vals, _ = torch.max(self.Tst.dataset, dim=0, keepdim=True)
+            self.Tst.dataset = (self.Tst.dataset - min_vals) / (max_vals - min_vals)
+            self.Tst.dataset = self.Tst.dataset.reshape(shape)
+            
         #if self.model_name in ['KNN', 'Tree']:
         self.X_test = []
         self.y_test = []
@@ -299,7 +317,7 @@ class Task():
             time.sleep(5)
             
     def trainModel(self):
-        model_path = 'models/attribution_%s.pt'%self.args.dataset
+        model_path = 'models/attribution_%s-%s.pt'%(self.task,self.args.dataset)
         if os.path.exists(model_path) and\
         self.args.modelRetrain == False:
             self.model = torch.load(model_path, map_location=self.device)
@@ -376,8 +394,9 @@ class Task():
                    
                 dict_utilityComputationTimeCost[test_idx] = self.preExp_statistic()
                 # reinitialize!!!
-                self.utility_file_path = self.utility_file_path.replace(
-                                            '.json','_Idx%s.json'%test_idx)
+                self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s_Idx%s.json'%(
+                        self.task, self.args.dataset, 
+                        self.args.manual_seed, test_idx)
                 self.utility_records = self.readUtilityRecords()
                 self.record_count = len(self.utility_records)//self.record_interval
                 # formal exp
@@ -394,8 +413,6 @@ class Task():
                 self.testSampleFeatureSV[test_idx] = SVtask.SV
                 print('SV of test sample %s/%s: '%(test_idx,len(self.complete_X_test)),
                       self.testSampleFeatureSV[test_idx])
-                self.utility_file_path = self.utility_file_path.replace(
-                                            '_Idx%s'%test_idx,'')
                 
             self.X_test = self.complete_X_test
             self.y_test = self.complete_y_test
@@ -412,8 +429,9 @@ class Task():
                 
                 dict_utilityComputationTimeCost[test_idx] = self.preExp_statistic()
                 # reinitialize!!!
-                self.utility_file_path = self.utility_file_path.replace(
-                                            '.json','_Idx%s.json'%test_idx)
+                self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s_Idx%s.json'%(
+                        self.task, self.args.dataset, 
+                        self.args.manual_seed, test_idx)
                 self.utility_records = self.readUtilityRecords()
                 self.record_count = len(self.utility_records)//self.record_interval
                 # formal exp
@@ -431,8 +449,7 @@ class Task():
                 self.testSampleFeatureSV[test_idx] = SVtask.SV
                 print('SV of test sample %s/%s: '%(test_idx,len(complete_Tst_idx)),
                       self.testSampleFeatureSV[test_idx], '\n')
-                self.utility_file_path = self.utility_file_path.replace(
-                                            '_Idx%s'%test_idx,'')
+                
             self.Tst.idx = complete_Tst_idx
         
         
