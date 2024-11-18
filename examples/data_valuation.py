@@ -7,14 +7,13 @@ Created on Wed Aug  7 16:23:58 2024
 
 from shapley import Shapley
 from arguments import args_parser
-import torch, time 
 import numpy as np
 
 from sklearn.neighbors import KNeighborsClassifier
-from models.Nets import RegressionModel, CNN, NN  # , CNNCifar
+from models.Nets import  RegressionModel, CNN, NN#, CNNCifar
 from ML_utils import DNNTrain, DNNTest, find_free_gpu
 #from torch.utils.data import DataLoader
-import copy, sys, threading, random
+import copy, sys, threading, random, torch, time, json, portalocker, os
 
 class Task():
     def __init__(self, args):
@@ -50,13 +49,22 @@ class Task():
             self.players = self.trn_data 
             
         # utility setting
-        self.utility_records = {str([]):(0,0)} 
+        self.writingUtility = False
+        self.readingUtility = False
+        self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s_GA-%s.json'%(
+                self.args.task, self.args.dataset, 
+                self.args.manual_seed, self.args.gradient_approximation)
+        self.utility_records = self.readUtilityRecords()
+        self.record_interval = 5*len(self.players)
+        self.record_count = len(self.utility_records)//self.record_interval
         self.Tst = torch.load(
             'data/%s%s/test.pt'%(args.dataset, args.data_allocation), 
             #map_location=self.device
             )
         print('test size: ', len(self.Tst))
         print('test labels: ', self.Tst.labels)
+        print('len(utility): ', len(self.utility_records),
+              self.utility_file_path)
         if self.model_name == 'KNN':
             self.X_test = []
             self.y_test = []
@@ -67,9 +75,57 @@ class Task():
             self.X_test = np.array(self.X_test)
             self.y_test = np.array(self.y_test)
             
-    def utilityComputation(self, player_idxs):
-        gradient_approximation = self.args.gradient_approximation
-        test_sample_skip = self.args.test_sample_skip
+            
+    def readUtilityRecords(self, emptySet_utility = None):
+        if type(emptySet_utility)==type(None):
+            emptySet_utility =  {str([]):(0,0)}
+            
+        if not os.path.exists(self.utility_file_path):
+            return emptySet_utility
+        
+        with open(self.utility_file_path, 'r',
+                  encoding='utf-8') as file:
+            portalocker.lock(file, 
+                             portalocker.LOCK_SH)#lock
+            utilities = eval(file.read().strip())
+            portalocker.unlock(file)
+        
+        return utilities
+    
+    def writeUtilityRecord(self):
+        #print(self.utility_file_path,len(self.utility_records),self.record_count)
+        if not self.writingUtility and\
+        len(self.utility_records)-1 > (self.record_count+1)*self.record_interval:
+            
+            self.writingUtility = True
+            
+            create = False
+            if not os.path.exists(self.utility_file_path):
+                os.mknod(self.utility_file_path)
+                create = True
+            with portalocker.Lock(self.utility_file_path,
+                                  mode="r+", 
+                                  timeout=300)  as file:
+                # copy is necessary under multi-thread environment
+                ur = self.utility_records.copy() 
+                if not create:
+                    ur.update(eval(file.read().strip()))
+                file.seek(0)
+                #portalocker.lock(file, portalocker.LOCK_EX)#lock
+                file.write(str(ur))
+                #json.dump(ur, file)
+                file.seek(0)
+                self.utility_records = eval(file.read().strip())
+                #portalocker.unlock(file)
+            
+            #print('\n', len(self.utility_records))
+            self.record_count = len(self.utility_records)//self.record_interval
+            
+            self.writingUtility = False
+            
+            
+    def utilityComputation(self, player_idxs, gradient_approximation=False, 
+                           testSampleSkip = False):
         if self.args.tuple_to_set>0:
             # invoked when the valuation target is the data set 
             all_data_tuple_idx = []
@@ -78,8 +134,12 @@ class Task():
             player_idxs = all_data_tuple_idx
         
         startTime = time.time()
-        utility_record_idx = str(sorted(player_idxs))
-        
+        if not gradient_approximation:
+            utility_record_idx = str(sorted(player_idxs))
+        else:
+            # the order of players need to be considered when GA is activated in DV tasks
+            utility_record_idx = str(player_idxs) 
+            
         if utility_record_idx in self.utility_records:
         #and not gradient_approximation:
             #print('Read DV compute utility with players:', utility_record_idx)
@@ -128,6 +188,7 @@ class Task():
                                    metric = self.args.test_metric)
                 endTime = time.time()
                 self.utility_records[utility_record_idx] = (utility, endTime-startTime)
+                self.writeUtilityRecord()
                 return utility, endTime-startTime
             
             loss_func = torch.nn.CrossEntropyLoss()
@@ -158,6 +219,7 @@ class Task():
         
         endTime = time.time()
         self.utility_records[utility_record_idx] = (utility, endTime-startTime)
+        self.writeUtilityRecord()
         return utility, endTime-startTime
     
     def printFlush(self):
@@ -165,19 +227,19 @@ class Task():
             sys.stdout.flush()
             time.sleep(5)
             
+            
     def run(self):
         thread = threading.Thread(target=task.printFlush)
         thread.daemon = True
         thread.start()
-
+        
         if self.args.gradient_approximation:
             self.args.num_parallelThreads=1
-
-        self.preExp_statistic()
+        #self.preExp_statistic()
         # reinitialize!!!
-        self.utility_records = {str([]):(0,0)}
-        SVtask = Shapley(player_num = len(self.players),
-                         task_utility_func=self.utilityComputation, 
+        self.utility_records = self.readUtilityRecords()
+        SVtask = Shapley(players = self.players, 
+                         taskUtilityFunc=self.utilityComputation, 
                          args = self.args)
         SVtask.CalSV()
         self.taskTerminated = True
@@ -187,11 +249,14 @@ class Task():
         # pre-experiment statistics
         self.utility_records = {str([]):(0,0)}
         utilityComputationTimeCost=dict()
-        for player_idx in range(len(self.players)+1):
+        for player_idx in range(len(self.players)):
             
-            utility, timeCost = self.utilityComputation(range(player_idx))
-            print('Computing utility with %s players tasks %s timeCost %s utility...'%(
-                player_idx, timeCost, utility))
+            _, timeCost = self.utilityComputation(
+                range(player_idx), 
+                gradient_approximation=self.args.gradient_approximation,
+                testSampleSkip=self.args.testSampleSkip)
+            print('Computing utility with %s players tasks %s timeCost...'%(
+                player_idx, timeCost))
             utilityComputationTimeCost[player_idx] = timeCost
         print('Average time cost for computing utility: ',
               np.mean(list(utilityComputationTimeCost.values())))

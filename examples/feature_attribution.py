@@ -7,7 +7,6 @@ Created on Wed Aug  7 16:23:58 2024
 
 from shapley import Shapley
 from arguments import args_parser
-import torch, time 
 import numpy as np
 
 from sklearn.neighbors import KNeighborsClassifier
@@ -16,7 +15,7 @@ from models.Nets import  RegressionModel, CNN, NN#, CNNCifar
 from ML_utils import DNNTrain, DNNTest, find_free_gpu
 #from torch.utils.data import DataLoader
 from functools import reduce
-import sys, threading, queue, copy
+import sys, threading, queue, copy, torch, time, json, portalocker, os
 
 class Task():
     def __init__(self, args):
@@ -29,13 +28,23 @@ class Task():
                 )
             
         # FA task settings
-        self.task = args.task
+        self.task = args.task + \
+                    ('-n' if args.dataNormalize else '') +\
+                    ('-maxIter%s'%args.scannedIter_maxNum \
+                     if args.scannedIter_maxNum!=np.inf else "")
         self.model = None
         self.model_name = args.model_name
         self.Trn = torch.load('data/%s%s/train0.pt'%(
             args.dataset, args.data_allocation), 
             #map_location=self.device
             )
+        if args.dataNormalize:
+            shape =  self.Trn.dataset.shape
+            self.Trn.dataset = self.Trn.dataset.reshape((shape[0],-1))
+            min_vals, _ = torch.min(self.Trn.dataset, dim=0, keepdim=True)
+            max_vals, _ = torch.max(self.Trn.dataset, dim=0, keepdim=True)
+            self.Trn.dataset = (self.Trn.dataset - min_vals) / (max_vals - min_vals)
+            self.Trn.dataset = self.Trn.dataset.reshape(shape)
         
         #if self.model_name in ['KNN', 'Tree']:
         self.X_train = []
@@ -94,6 +103,14 @@ class Task():
             'data/%s%s/test.pt'%(args.dataset, args.data_allocation), 
             #map_location=self.device
             )
+        if args.dataNormalize:
+            shape =  self.Tst.dataset.shape
+            self.Tst.dataset = self.Tst.dataset.reshape((shape[0],-1))
+            min_vals, _ = torch.min(self.Tst.dataset, dim=0, keepdim=True)
+            max_vals, _ = torch.max(self.Tst.dataset, dim=0, keepdim=True)
+            self.Tst.dataset = (self.Tst.dataset - min_vals) / (max_vals - min_vals)
+            self.Tst.dataset = self.Tst.dataset.reshape(shape)
+            
         #if self.model_name in ['KNN', 'Tree']:
         self.X_test = []
         self.y_test = []
@@ -106,16 +123,86 @@ class Task():
         self.X_test = np.array(self.X_test)
         self.complete_X_test = copy.deepcopy(self.X_test)
         self.y_test = np.array(self.y_test)
+        self.complete_y_test = copy.deepcopy(self.y_test)
+        
+        # select test samples 
+        self.num_samples_each_class = 1 # select only one sample in each class
+        self.selected_test_samples = []
+        if self.args.attack_type == None and\
+        len(self.players)>5 and \
+        False not in [len(
+            np.where(self.complete_y_test==label)[0]
+            ) > self.num_samples_each_class  \
+                for label in np.unique(self.complete_y_test)]: 
+            for label in np.unique(self.complete_y_test):
+                self.selected_test_samples += np.random.choice(
+                    np.where(self.complete_y_test==label)[0], 
+                    self.num_samples_each_class, replace=False).tolist() 
+        else:
+            self.selected_test_samples = range(len(self.complete_X_test))
         
         # player setting
         self.players = [feature_idx \
                         for feature_idx in range(self.Tst[0][0].reshape(-1).shape[-1])]
         # utility setting
-        self.utility_records = {str([]):(0,0)}
+        self.writingUtility = False
+        self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s.json'%(
+                self.args.task, self.args.dataset, 
+                self.args.manual_seed)
+        self.utility_records = self.readUtilityRecords()
+        self.record_interval = 5*len(self.players)
+        self.record_count = len(self.utility_records)//self.record_interval
+        print('len(utility): ', len(self.utility_records),
+              self.utility_file_path)
         
         #self.skippableTestSample = dict([(player_id, set()) \
         #                for player_id in range(len(self.players))])
         
+    
+    def readUtilityRecords(self, emptySet_utility = None):
+        if type(emptySet_utility)==type(None):
+            emptySet_utility =  {str([]):(0,0)}
+            
+        if not os.path.exists(self.utility_file_path):
+            return emptySet_utility
+        
+        with open(self.utility_file_path, 'r',
+                  encoding='utf-8') as file:
+            portalocker.lock(file, 
+                             portalocker.LOCK_SH)#lock
+            utilities = eval(file.read().strip())
+            portalocker.unlock(file)
+        return utilities
+    
+    def writeUtilityRecord(self):
+        #print(self.utility_file_path,len(self.utility_records),self.record_count)
+        if not self.writingUtility and\
+        len(self.utility_records)-1 > (self.record_count+1)*self.record_interval:
+            
+            self.writingUtility = True
+            
+            create = False
+            if not os.path.exists(self.utility_file_path):
+                os.mknod(self.utility_file_path)
+                create = True
+            with portalocker.Lock(self.utility_file_path,
+                                  mode="r+", 
+                                  timeout=300)  as file:
+                # copy is necessary under multi-thread environment
+                ur = self.utility_records.copy() 
+                if not create:
+                    ur.update(eval(file.read().strip()))
+                file.seek(0)
+                file.write(str(ur))
+                file.seek(0)
+                self.utility_records = eval(file.read().strip())
+                
+            #print('\n', len(self.utility_records))
+            self.record_count = len(self.utility_records)//self.record_interval
+            
+            self.writingUtility = False
+            
+            
     def sklearn_predict(self, replace_idxs, replace_val, results):
         X_test = copy.deepcopy(self.X_test)
         X_test[:, replace_idxs] = replace_val
@@ -124,7 +211,6 @@ class Task():
                     test_bs= len(X_test),
                     metric = self.args.test_metric)
             )
-        
         
         
     def torch_predict(self, replace_idxs, replace_val, results):
@@ -141,9 +227,9 @@ class Task():
     
     def utilityComputation(self, player_idxs, gradient_approximation=False, 
                            testSampleSkip = False):
-        player_idxs = sorted(player_idxs)
+        
         startTime = time.time()
-        utility_record_idx = str(player_idxs)
+        utility_record_idx = str(sorted(player_idxs))
         if utility_record_idx in self.utility_records:
         #and not gradient_approximation:
             #print('Read FA compute utility with players:', utility_record_idx)
@@ -211,6 +297,7 @@ class Task():
                     thread.join()
             while not len(baselines) == results._qsize():
                 time.sleep(3)
+            
             predictions = np.sum(list(results.queue), 0)/len(baselines)
             utility = predictions.sum()/reduce((lambda x,y:x*y),predictions.shape)
             
@@ -221,6 +308,7 @@ class Task():
         
         endTime = time.time()
         self.utility_records[utility_record_idx] = (utility, endTime-startTime)
+        self.writeUtilityRecord()
         return utility, endTime-startTime
     
     def printFlush(self):
@@ -229,6 +317,22 @@ class Task():
             time.sleep(5)
             
     def trainModel(self):
+        model_path = 'models/attribution_%s-%s.pt'%(self.task,self.args.dataset)
+        if os.path.exists(model_path) and\
+        self.args.modelRetrain == False:
+            self.model = torch.load(model_path, map_location=self.device)
+            if self.model_name in ['KNN', 'Tree']:
+                testData =  (self.X_test, self.y_test)
+            elif self.model_name in ['CNN', 'Linear', 'NN']:
+                testData = self.Tst
+            print('Given model accuracy: ',
+                  DNNTest(self.model, testData,
+                          test_bs= len(self.X_test),
+                          metric = 'tst_accuracy', 
+                          pred_print = True)
+                  )
+            return
+        
         if self.model_name in ['KNN', 'Tree']:
             if self.model_name == 'KNN':
                 self.model = KNeighborsClassifier(
@@ -265,7 +369,8 @@ class Task():
                           metric = 'tst_accuracy', 
                           pred_print = True) 
                   )
-            
+        torch.save(self.model, model_path)
+        
     def run(self):
         thread = threading.Thread(target=self.printFlush)
         thread.daemon = True
@@ -276,77 +381,67 @@ class Task():
         self.testSampleFeatureSV = dict()
         dict_utilityComputationTimeCost = dict()
         if self.model_name in ['KNN', 'Tree']:
-            complete_X_test = copy.deepcopy(self.X_test)
-            complete_y_test = copy.deepcopy(self.y_test)
-            
-            # select test samples 
-            selected_test_samples = []
-            if len(self.Tst) > len( np.unique(self.Tst.labels))*10:
-                for label in np.unique(self.y_test):
-                    selected_test_samples += np.random.choice(
-                        np.where(self.y_test==label)[0], 
-                        10, replace=False).tolist() # select 10 samples in each class
-            else:
-                selected_test_samples = range(len(complete_X_test))
             
             # start testing
-            for test_idx in range(len(complete_X_test)):
+            for test_idx in range(len(self.complete_X_test)):
                 # compute SV for only selected test samples for saving time cost
-                if test_idx not in selected_test_samples:
+                if test_idx not in self.selected_test_samples:
                     continue
                 
                 # reinitialize!!!
-                self.utility_records = {str([]):(0,0)}
-                self.X_test = complete_X_test[test_idx:test_idx+1]
-                self.y_test = complete_y_test[test_idx:test_idx+1]
+                self.X_test = self.complete_X_test[test_idx:test_idx+1]
+                self.y_test = self.complete_y_test[test_idx:test_idx+1]
+                   
+                dict_utilityComputationTimeCost[test_idx] = self.preExp_statistic()
+                # reinitialize!!!
+                self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s_Idx%s.json'%(
+                        self.task, self.args.dataset, 
+                        self.args.manual_seed, test_idx)
+                self.utility_records = self.readUtilityRecords()
+                self.record_count = len(self.utility_records)//self.record_interval
+                # formal exp
                 if len(self.players)<15:
                     print('\n test sample data: ', self.X_test,
                           '\n test sample label: ', self.y_test)
-                dict_utilityComputationTimeCost[test_idx] = self.preExp_statistic()
-                # reinitialize!!!
-                self.utility_records = {str([]):(0,0)}
-                # formal exp
+                    print(self.utility_file_path,
+                          'len(self.utility_records):', 
+                          len(self.utility_records))
                 SVtask = Shapley(players = self.players, 
                                  taskUtilityFunc=self.utilityComputation, 
                                  args = self.args)
                 SVtask.CalSV()
                 self.testSampleFeatureSV[test_idx] = SVtask.SV
-                print('SV of test sample %s/%s: '%(test_idx,len(complete_X_test)),
+                print('SV of test sample %s/%s: '%(test_idx,len(self.complete_X_test)),
                       self.testSampleFeatureSV[test_idx])
                 
-            self.X_test = complete_X_test
-            self.y_test = complete_y_test
+            self.X_test = self.complete_X_test
+            self.y_test = self.complete_y_test
         else:
             complete_Tst_idx = self.Tst.idxs
             
-            # select test samples 
-            selected_test_samples = []
-            if False not in [
-                    len(np.where(self.Tst.labels.numpy()==label)[0]) > 10 \
-                        for label in np.unique(self.Tst.labels)]: 
-                for label in np.unique(self.Tst.labels):
-                    selected_test_samples += np.random.choice(
-                        np.where(self.Tst.labels.numpy()==label)[0], 
-                        10, replace=False).tolist() # select 10 samples in each class
-            else:
-                selected_test_samples = range(len(complete_Tst_idx))
-                
             # start testing
             for test_idx in range(len(complete_Tst_idx)):
                 # compute SV for only selected test samples for saving time cost
-                if test_idx not in selected_test_samples:
+                if test_idx not in self.selected_test_samples:
                     continue
-                if len(self.players)<15:
-                    print('\n test sample data: ', self.Tst.dataset[test_idx],
-                          '\n test sample label: ', self.Tst.labels[test_idx])
-                # reinitialize!!!
-                self.utility_records = {str([]):(0,0)}
+                    
                 self.Tst.idxs = complete_Tst_idx[test_idx:test_idx+1]
                 
                 dict_utilityComputationTimeCost[test_idx] = self.preExp_statistic()
                 # reinitialize!!!
-                self.utility_records = {str([]):(0,0)}
+                self.utility_file_path = 'logs/UtilityRecord_%s_%s_%s_Idx%s.json'%(
+                        self.task, self.args.dataset, 
+                        self.args.manual_seed, test_idx)
+                self.utility_records = self.readUtilityRecords()
+                self.record_count = len(self.utility_records)//self.record_interval
                 # formal exp
+                if len(self.players)<15:
+                    print('\n test sample data: ', self.Tst.dataset[test_idx],
+                          '\n test sample label: ', self.Tst.labels[test_idx])
+                    print(self.utility_file_path,
+                          'len(self.utility_records):', 
+                          len(self.utility_records))
+                    
                 SVtask = Shapley(players = self.players, 
                                  taskUtilityFunc=self.utilityComputation, 
                                  args = self.args)
@@ -373,6 +468,8 @@ class Task():
         #thread.join()
     
     def preExp_statistic(self):
+        # reinitialize!!!
+        self.utility_records = {str([]):(0,0)}
         utilityComputationTimeCost=dict()
         for player_idx in range(len(self.players)+1):
             utility, timeCost = self.utilityComputation(
