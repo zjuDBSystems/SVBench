@@ -43,8 +43,10 @@ class Task():
                 ) \
             for no in range(self.args.num_clients)]
             
-        model_paths = ['models/FL_%s_R%sC%s.pt'%(self.args.dataset,
-                                                 ridx, trainer_idx) \
+        model_paths = ['models/FL_%s_R%sC%s.pt'%(
+            (self.args.dataset if self.args.manual_seed==42 \
+             else (self.args.dataset+"-"+str(self.args.manual_seed))),
+                ridx, trainer_idx) \
                        for ridx in range(self.args.maxRound) \
                            for trainer_idx in range(len(self.players))]
         if False not in [os.path.exists(model_path)\
@@ -76,8 +78,10 @@ class Task():
                         ).state_dict()
                     p_k [player_idx] = len(self.players[player_idx])
                     torch.save(localUpdates[player_idx],
-                               'models/FL_%s_R%sC%s.pt'%(self.args.dataset, 
-                                                         ridx, player_idx)
+                               'models/FL_%s_R%sC%s.pt'%(
+                                   (self.args.dataset if self.args.manual_seed==42 \
+                                    else (self.args.dataset+"-"+str(self.args.manual_seed))),
+                                       ridx, player_idx)
                                )
                     torch.cuda.empty_cache()
                     print('Round %s player %s time cost:'%(ridx, player_idx),
@@ -93,9 +97,11 @@ class Task():
         self.players = [
             dict([
                 (ridx, 
-                 torch.load('models/FL_%s_R%sC%s.pt'%(self.args.dataset, 
-                                                      ridx, no), 
-                            map_location=self.device)) \
+                 torch.load('models/FL_%s_R%sC%s.pt'%(
+                     (self.args.dataset if self.args.manual_seed==42 \
+                      else (self.args.dataset+"-"+str(self.args.manual_seed))), 
+                         ridx, no), 
+                         map_location=self.device)) \
                     for ridx in range(self.args.maxRound)]) \
                 for no in range(self.args.num_clients)]
             
