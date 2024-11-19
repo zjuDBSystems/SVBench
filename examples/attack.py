@@ -568,10 +568,10 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
     for idx in testSampleFeatureSV.keys():
         if idx not in auxiliary_index:
             continue
-        if 'torch' in str(type(task.model)):
+        if 'Nets' in str(type(task.model)):
             task.Tst.dataset[idx] = torch.FloatTensor(randomTestData[idx])
         else:
-            task.X_test[auxiliary_index] = randomTestData[idx]
+            task.X_test[idx] = randomTestData[idx]
     #print(task.Tst.dataset)
     task.randomSet = auxiliary_index
     
@@ -598,14 +598,18 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
                      for test_idx in validation_index]
         
     # start inference
-    m_c=30
+    m_c= int(len(auxiliary_SV)/SV_args.num_classes)
     r=np.array(auxiliary_SV).max()-np.array(auxiliary_SV).min()
     gagy = r/100
     tau=0.4
-    print('number of reference samples:', m_c)
+    print('number of reference samples:', m_c, len(auxiliary_SV))
     print('threshold for feature SV difference:',r, gagy)
     print('threshold for feature max diff in references:',tau)
-    predictions = np.zeros(task.X_test[validation_index].shape)
+    
+    if 'Nets' in str(type(task.model)):
+        predictions = np.zeros(task.Tst.dataset[validation_index].shape)
+    else:
+        predictions = np.zeros(task.X_test[validation_index].shape)
     num_unsuccess = 0
     for validation_data_idx in range(len(validation_SV)):
         for feature_idx in range(len(validation_SV[validation_data_idx])):
@@ -621,7 +625,7 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
             for item  in diff_reference.items():
                 if len(references)<m_c or item[1] < gagy:
                     references.append(
-                        task.X_test[auxiliary_index[item[0]],feature_idx])
+                        task.Tst.dataset[auxiliary_index[item[0]],feature_idx])
             if max(references)-min(references)>tau:
                 #not to predict
                 num_unsuccess += 1
