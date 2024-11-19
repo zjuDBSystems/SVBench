@@ -412,11 +412,14 @@ def FIA_logRead(SV_args):
                     auxiliary_index = eval(
                         line.split('auxiliary_index')[-1].strip())
                 elif 'test sample data:' in line:
-                    data = eval(
-                        line.split(
-                            'test sample data:  tensor(')[-1].strip()+\
-                        lines[no+1].replace(')','').strip()
-                        )
+                    data = line.split(
+                        'test sample data:  tensor(')[-1].strip()
+                    tmp = 1
+                    while ')' not in data:
+                        data += lines[no+tmp].strip()
+                        tmp += 1
+                    data = eval(data.replace(')',''))
+                    
                 if 'Current SV' in line:
                     Current_SV.append(eval(line.split('Current SV:')[-1]))
                 if 'SV of test sample' in line:
@@ -485,13 +488,13 @@ def FIA(SV_args):
     _, _, testSampleFeatureSV, testSampleFeatureSV_ref = FIA_logRead(SV_args)
     task.selected_test_samples = set(task.selected_test_samples)-\
                                  set(testSampleFeatureSV.keys())
-    task.run()
-    
+    if len(task.selected_test_samples)>0:
+        task.run()
     task.testSampleFeatureSV.update(testSampleFeatureSV)
     task.testSampleFeatureSV_var.update(testSampleFeatureSV_ref)
     if SV_args.privacy_protection_measure != None:
         FIA_addPrivacyProtection(SV_args, task.testSampleFeatureSV,
-                                 task.testSampleFeatureSV_ref)
+                                 task.testSampleFeatureSV_var)
         
     
     auxiliary_SV = [list(task.testSampleFeatureSV[test_idx].values()) \
@@ -580,13 +583,13 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
     #task.run()
     task.selected_test_samples = set(task.selected_test_samples)-\
                                  set(testSampleFeatureSV.keys())
-    task.run()
-    
+    if len(task.selected_test_samples)>0:
+        task.run()
     task.testSampleFeatureSV.update(testSampleFeatureSV)
     task.testSampleFeatureSV_var.update(testSampleFeatureSV_ref)
     if SV_args.privacy_protection_measure != None:
         FIA_addPrivacyProtection(SV_args, task.testSampleFeatureSV,
-                                 task.testSampleFeatureSV_ref)
+                                 task.testSampleFeatureSV_var)
         
         
     auxiliary_SV = [list(task.testSampleFeatureSV[test_idx].values()) \
