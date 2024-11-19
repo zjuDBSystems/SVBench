@@ -164,6 +164,8 @@ class Task():
         
         # used only by FIA
         self.randomSet = []
+        self.testSampleFeatureSV = dict()
+        self.testSampleFeatureSV_var = dict()
         
     def readUtilityRecords(self, emptySet_utility = None):
         if type(emptySet_utility)==type(None):
