@@ -55,12 +55,12 @@ def dimension_reduction(SVs, level, reference_var=dict()):
     if len(reference_var) == len(SVs):
         exposed_idx = dict(
                 sorted(reference_var.items(), 
-                       key=lambda item: item[1])[-int(len(reference_var)*level): ]
+                       key=lambda item: item[1])[-max(1,int(len(reference_var)*level)): ]
                 ).keys()
         
     else:
         exposed_idx = dict(
-                sorted(SVs.items(), key=lambda item: item[1])[-int(len(SVs)*level): ]
+                sorted(SVs.items(), key=lambda item: item[1])[-max(1,int(len(SVs)*level)): ]
                 ).keys()
     SVs = dict([(key, (SVs[key] if key in exposed_idx else 0)) \
                 for key in SVs.keys()])
