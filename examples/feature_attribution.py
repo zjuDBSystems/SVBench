@@ -388,6 +388,7 @@ class Task():
         
         
         self.testSampleFeatureSV = dict()
+        self.testSampleFeatureSV_var = dict()
         dict_utilityComputationTimeCost = dict()
         if self.model_name in ['KNN', 'Tree']:
             
@@ -424,6 +425,9 @@ class Task():
                                  args = self.args)
                 SVtask.CalSV()
                 self.testSampleFeatureSV[test_idx] = SVtask.SV
+                self.testSampleFeatureSV_var[test_idx] = dict([
+                    (fidx, np.var(SVtask.SV_var[fidx]))\
+                        for fidx in SVtask.SV_var.keys()])
                 print('SV of test sample %s/%s: '%(test_idx,len(self.complete_X_test)),
                       self.testSampleFeatureSV[test_idx])
                 
@@ -464,6 +468,9 @@ class Task():
                                  args = self.args)
                 SVtask.CalSV()
                 self.testSampleFeatureSV[test_idx] = SVtask.SV
+                self.testSampleFeatureSV_var[test_idx] = dict([
+                    (fidx, np.var(SVtask.SV_var[fidx]))\
+                        for fidx in SVtask.SV_var.keys()])
                 print('SV of test sample %s/%s: '%(test_idx,len(complete_Tst_idx)),
                       self.testSampleFeatureSV[test_idx], '\n')
                 
