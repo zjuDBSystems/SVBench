@@ -533,16 +533,14 @@ class Shapley():
             base_comp_func = self.MLE
         elif self.argorithm == 'RE':
             base_comp_func = self.RE
+            self.empty_set_utility, _ = self.utility_function([])
+            print('The RE task\'s emptySet utility: ', self.empty_set_utility)
         elif self.argorithm == 'GT':
             base_comp_func = self.GT
         elif self.argorithm == 'CP':
             base_comp_func = self.CP
         else:
             print("Unknown computation method!!")
-
-        if self.method == 'RE':
-            self.empty_set_utility, _ = self.utility_function([])
-            print('The RE task\'s emptySet utility: ', self.empty_set_utility)
 
         self.start_time = time.time()
         avg_time_cost = 0
@@ -555,7 +553,7 @@ class Shapley():
         # CP paras
         num_measurement = int(N/2)
         A_CP = np.random.binomial(1, 0.5, size=(num_measurement, N))
-        A_CP = 1 / np.sqrt(num_measurement) * (2 * A - 1)
+        A_CP = 1 / np.sqrt(num_measurement) * (2 * A_CP - 1)
         y_CP = dict([(m, []) for m in range(num_measurement)])
         # MLE paras
         MLE_interval = 0

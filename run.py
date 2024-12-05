@@ -9,6 +9,8 @@ import json
 import portalocker
 import os
 
+from collections import namedtuple
+
 from config import Task, BENCHMARK
 
 
@@ -32,12 +34,13 @@ def para_set(args):
              'manual_seed': 42,
              'privacy': None,
              'privacy_level': 0.5,
+             'utility_function': None
              }
     for required_key in required:
         if required_key not in args:
             print(f'Missing required argument: {required_key}')
             return -1
-    if args.task not in BENCHMARK:
+    if args.get('task') in BENCHMARK:
         for bench_key in bench_required:
             if bench_key not in args:
                 print(
@@ -69,6 +72,8 @@ def sv_calc(**kwargs):
     if para_set(kwargs) == -1:
         exit(-1)
     print(f'Experiment arguments:\n{kwargs}')
+    ARGS = namedtuple('ARGS', kwargs.keys())
+    kwargs = ARGS(**kwargs)
 
     if open_log_file(kwargs.log_file) == -1:
         exit(-1)

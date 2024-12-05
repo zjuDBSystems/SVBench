@@ -4,6 +4,7 @@ import importlib
 import os
 import numpy as np
 import portalocker
+import ast
 import time
 
 from Tasks import data_valuation, federated_learning, result_interpretation
@@ -42,12 +43,14 @@ BENCHMARK = {
 class Task():
     def __init__(self, args):
         self.args = args
+        self.GA = args.GA
+        self.TSS = args.TSS
+        self.parallel_threads_num = 1 if self.GA else args.parallel_threads_num
 
         self.init_flag = True
 
         self.task = args.task
-        self.utility_function = self.utility_computation_func_load(
-            args.get('utility_function'))
+        self.utility_function = self.utility_computation_func_load(args.utility_function)
         if self.utility_function is None:
             self.init_flag = False
             return
@@ -63,53 +66,44 @@ class Task():
         self.dirty_utility_record_num = 0
 
         if args.task in BENCHMARK:
-            self.player_num = BENCHMARK[args.task][args.dataset][0]
+            self.player_num = BENCHMARK[args.task][args.dataset]
             full_check_type = BENCHMARK_ALGO[args.algo][0]
         else:
             self.player_num = args.player_num
             full_check_type = args.full_check
 
-        self.GA = args.GA
-        self.TSS = args.TSS
-        self.parallel_threads_num = 1 if self.GA else args.parallel_threads_num
 
         self.shapley = Shapley(
             player_num=self.player_num,
             utility_function=self.utility_computation_call,
-            cache_size=args.SV_cache_size,
-            argorithm=args.argo,
+            argorithm=args.algo,
             truncation=args.TC,
             truncation_threshold=args.TC_threshold,
-            privacy_protection_measure=args.privacy,
-            privacy_protection_level=args.privacy_level,
             parallel_threads_num=self.parallel_threads_num,
             sampler=Sampler(
                 sampling_strategy=args.sampling,
                 algo=args.algo, player_num=self.player_num),
             output=Output(
                 convergence_threshold=args.convergence_threshold,
-                cache_size=args.cache_size,
+                cache_size=args.SV_cache_size,
                 player_num=self.player_num,
-                full_check_type=full_check_type))
+                full_check_type=full_check_type,
+                privacy_protection_measure=args.privacy,
+                privacy_protection_level=args.privacy_level))
 
         self.task_terminated = False
         self.flush_event = threading.Event()
 
     def utility_computation_func_load(self, utility_function_api):
-        try:
-            if self.task == 'DV':
-                DV = data_valuation.DV(self.args)
-                return DV.utility_computation
-            # elif self.task == 'FL':
-            #     return federated_learning.utility_computation
-            # elif self.task == 'RI':
-            #     return result_interpretation.utility_computation
-            else:
-                return utility_function_api
-        except Exception as e:
-            print(
-                f"Get utility function {utility_function_api} error:\n{e}")
-            return None
+        if self.task == 'DV':
+            DV = data_valuation.DV(self.args)
+            return DV.utility_computation
+        # elif self.task == 'FL':
+        #     return federated_learning.utility_computation
+        # elif self.task == 'RI':
+        #     return result_interpretation.utility_computation
+        else:
+            return utility_function_api
 
     def utility_computation_call(self, player_list):
         utility_record_idx = str(
@@ -125,8 +119,7 @@ class Task():
             else:
                 utility = self.utility_function(player_list)
             time_cost = time.time() - start_time
-            if self.write_utility_record(utility_record_idx, utility, time_cost) == -1:
-                exit(-1)
+            self.write_utility_record(utility_record_idx, utility, time_cost)
         except Exception as e:
             print(
                 f"Call utility computation error:\n{e}")
@@ -158,51 +151,37 @@ class Task():
     def read_history_utility_record(self):
         self.utility_record_file = f'./Tasks/utility_records/{self.task}{"_GA" if self.GA else ""}.log' \
             if self.utility_record_file == '' else self.utility_record_file
+        
         if os.path.exists(self.utility_record_file):
-            with open(self.utility_record_file, 'r', encoding='utf-8') as file:
-                try:
-                    portalocker.lock(file, portalocker.LOCK_SH)
-                    utility_records = eval(file.read().strip())
-                except Exception as e:
-                    print(
-                        f"Read utility record file {self.utility_record_file} error:\n{e}")
-                    utility_records = None
-                finally:
-                    portalocker.unlock(file)
-                    return utility_records
+            with portalocker.Lock(self.utility_record_file, 'r', encoding='utf-8', flags=portalocker.LOCK_SH) as file:
+                utility_records = ast.literal_eval(file.read().strip())
+            return utility_records
         else:
             return {str([]): (0, 0)}
 
     def write_utility_record(self, utility_record_idx, utility, time_cost):
         if utility_record_idx in self.utility_records:
-            return 0
+            return
 
         with self.utility_record_write_lock:
             self.utility_records[utility_record_idx] = (utility, time_cost)
             self.dirty_utility_record_num += 1
 
-        ret = 0
         if self.dirty_utility_record_num > UTILITY_RECORD_FILEWRITE_INTERVAL    \
                 and self.utility_record_filewrite_lock.acquire(blocking=False):
-            log_file_exist = os.path.exists(self.utility_record_file)
-            try:
-                with portalocker.Lock(self.utility_record_file, mode="a+", timeout=0) as file:
-                    with self.utility_record_write_lock:
-                        if log_file_exist:
-                            file.seek(0)
-                            self.utility_records.update(
-                                eval(file.read().strip()))
-                        self.dirty_utility_record_num = 0
-                    file.seek(0)
-                    file.write(str(self.utility_records))
-            except Exception as e:
-                print(
-                    f"Write utility record file {self.utility_record_file} error:\n{e}")
-                ret = -1
-            finally:
-                self.utility_record_filewrite_lock.release()
-
-        return ret
+            create = False
+            if not os.path.exists(self.utility_record_file):
+                os.mknod(self.utility_record_file)
+                create = True
+            with portalocker.Lock(self.utility_record_file, mode="r+", timeout=0) as file:
+                with self.utility_record_write_lock:
+                    if not create:
+                        self.utility_records.update(ast.literal_eval(file.read().strip()))
+                    self.dirty_utility_record_num = 0
+                    ur = self.utility_records.copy()
+                file.seek(0)
+                file.write(str(ur))
+            self.utility_record_filewrite_lock.release()
 
     def run(self):
         self.run_print_flush_thread()

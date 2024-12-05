@@ -3,9 +3,9 @@ import copy
 import random
 
 
-from data_preparation import data_prepare
-from Nets import RegressionModel, NN
-from ML_utils import DNNTrain, DNNTest
+from .data_preparation import data_prepare
+from .Nets import RegressionModel, NN
+from .ML_utils import DNNTrain, DNNTest
 
 
 class DV():
