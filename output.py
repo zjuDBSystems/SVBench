@@ -14,7 +14,7 @@ class Output():
                  privacy_protection_measure,
                  privacy_protection_level,
                  full_check_type):
-        self.convergence_threshold = convergence_threshold
+        self.threshold = convergence_threshold
         self.cache_size = cache_size
         self.SV_cache = []
         self.player_num = player_num
@@ -24,6 +24,7 @@ class Output():
 
     def cache_SV(self, SVs):
         self.SV_cache.append(copy.deepcopy(SVs))
+        return len(self.SV_cache) < self.cache_size
 
     def convergence_check(self,
                           calculated_num,
@@ -32,8 +33,15 @@ class Output():
                           start_time,
                           utility_comp_num,
                           avg_time_cost):
-        if len(self.SV_cache) < self.cache_size:
+        if calculated_num == 0:
             return False
+        
+        print("Average time cost of a single time of utility computation: ",
+                  np.average(avg_time_cost) if len(avg_time_cost) > 0 else 0)
+        
+        if self.cache_SV(resultant_SVs):
+            return False
+        
 
         self.SVs = resultant_SVs
         self.SVs_var = SVs_var
@@ -41,8 +49,6 @@ class Output():
         self.utility_comp_num = utility_comp_num
         self.avg_time_cost = avg_time_cost
 
-        if calculated_num > 0:
-            self.cache_SV(resultant_SVs)
 
         if self.full_check_type == 'coalition'  \
                 and calculated_num >= 2**(self.player_num):
@@ -64,7 +70,11 @@ class Output():
         convergence_diff = sum_/(count if count > 0 else 10**(-12))
         print("Current average convergence_diff (count %s): " % count,
               convergence_diff)
-        return True if convergence_diff <= self.convergence_threshold else False
+        if convergence_diff <= self.threshold:
+            print("Convergence checking passed.")
+            self.privacy_protect()
+            return True
+        return False
 
     def privacy_protect(self):
         # add privacy protection only when specified
