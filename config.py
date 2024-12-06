@@ -19,6 +19,8 @@ BENCHMARK_ALGO = {
     'MC': ('permutation'),
     'MLE': ('coalition'),
     'GT': ('coalition'),
+    'RE': ('permutation'),
+    'CP': ('permutation')
 }
 BENCHMARK = {
     'DV': {

@@ -165,10 +165,6 @@ class Shapley():
             print(f"Current number of truncations: {truncation_num}")
         print(
             f"Current times of utility computation: {self.utility_comp_num}")
-        aver_time = (np.average(self.time_cost_per_utility_comp)
-                     if len(self.time_cost_per_utility_comp) > 0 else 0)
-        print(
-            f"Average time cost of a utility computation: {aver_time}")
 
         return iter_times
 
@@ -261,9 +257,7 @@ class Shapley():
                   len(self.truncation_coaliations))
         print("Current times of utility computation: ",
               self.utility_comp_num)
-        print("Average time cost of a utility computation: ",
-              (np.average(self.time_cost_per_utility_comp)
-               if len(self.time_cost_per_utility_comp) > 0 else 0))
+        return len(self.sampler.coalitions)
 
     def GT_RE_parallelable_thread(self, order, selected_players, results):
         u, t = self.utility_function(selected_players[-1])
@@ -366,6 +360,7 @@ class Shapley():
         print("Average time cost of a single time of utility computation: ",
               (np.average(self.time_cost_per_utility_comp)
                if len(self.time_cost_per_utility_comp) > 0 else 0))
+        return len(self.sampler.coalitions)
 
     def CP(self, **kwargs):
         permutation = kwargs.get('permutation')
@@ -441,6 +436,7 @@ class Shapley():
         print("Average time cost of a single time of utility computation: ",
               (np.average(self.time_cost_per_utility_comp)
                if len(self.time_cost_per_utility_comp) > 0 else 0))
+        return iter_times
 
     def RE(self, **kwargs):
         permutation = kwargs.get('permutation')
@@ -508,9 +504,8 @@ class Shapley():
                   len(self.truncation_coaliations))
             print("Current times of utility computation: ",
                   len(utility_calculated_coalitions)-len(self.truncation_coaliations))
-            print("Current average time cost of a single time of utility computation: ",
-                  (np.average(self.time_cost_per_utility_comp)
-                   if len(self.time_cost_per_utility_comp) > 0 else 0))
+            
+            return iter_times
 
     def problemScale_statistics(self):
         print('【Problem Scale of SV Exact Computation】')
