@@ -36,8 +36,7 @@ class Output():
         if calculated_num == 0:
             return False
         
-        print("Average time cost of a single time of utility computation: ",
-                  np.average(avg_time_cost) if len(avg_time_cost) > 0 else 0)
+        print("Average time cost of a single time of utility computation: ", avg_time_cost)
         
         if self.cache_SV(resultant_SVs):
             return False

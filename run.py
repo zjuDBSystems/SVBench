@@ -86,5 +86,6 @@ def sv_calc(**kwargs):
 
 
 if __name__ == '__main__':
-    sv_calc(task='DV',
-            dataset='iris')
+    # sv_calc(task='DV',
+    #         dataset='iris')
+    sv_calc(task='FL', dataset='mnist')

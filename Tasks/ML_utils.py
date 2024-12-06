@@ -79,8 +79,7 @@ def DNNTrain(model, trn_data, lr, epoch=1, batch_size=128, loss_func=None,
                         val_data.idxs = np.random.choice(
                             trn_data_idxs, int(len(trn_data_idxs)/5))
                         val_results.append(
-                            DNNTest(model, val_data, test_bs=128,
-                                    metric=validation_metric))
+                            DNNTest(model, val_data, metric=validation_metric))
                         if len(val_results) > 3 and\
                                 np.max(val_results[-3:]) < 0.1*val_results[0]:
                             convergeFlag = True

@@ -49,6 +49,7 @@ class FL():
         else:
             # model initialize and training
             # FedAvg
+            print("Models generating...")
             global_model = self.model_initiation()
             loss_func = torch.nn.CrossEntropyLoss()
             for ridx in range(self.max_round):
@@ -59,11 +60,9 @@ class FL():
                     # local model training
                     pstar_time = time.time()
                     localUpdates[player_idx] = DNNTrain(
-                        global_model, self.player_datasets[player_idx],
-                        self.local_ep, self.local_bs,
-                        self.lr*(self.decay_rate**ridx), loss_func,
-                        momentum=0, weight_decay=0, max_norm=5,
-                    ).state_dict()
+                        model=global_model, trn_data=self.player_datasets[player_idx],
+                        lr=self.lr*(self.decay_rate**ridx), epoch=self.local_ep, 
+                        batch_size=self.local_bs, loss_func=loss_func).state_dict()
                     p_k[player_idx] = len(self.player_datasets[player_idx])
                     torch.save(localUpdates[player_idx],
                                'models/FL_%s_R%sC%s.pt' % (
@@ -72,13 +71,13 @@ class FL():
                         ridx, player_idx)
                     )
                     torch.cuda.empty_cache()
-                    print('Round %s player %s time cost:' % (ridx, player_idx),
-                          time.time()-pstar_time)
+                    # print('Round %s player %s time cost:' % (ridx, player_idx),
+                    #       time.time()-pstar_time)
                     sys.stdout.flush()
                 # aggregation
                 agg_results = self.weighted_avg(localUpdates, p_k)
                 global_model.load_state_dict(agg_results)
-                print('Round %s time cost: ', time.time()-start_time)
+                print(f'Round {ridx} time cost: {time.time()-start_time}')
 
         self.player_data_size = [len(self.player_datasets[no])
                                  for no in range(self.num_clients)]
@@ -109,10 +108,10 @@ class FL():
         return net_glob
 
     def model_initiation(self):
-        if self.args.dataset == 'cifar':
-            global_model = CNNCifar(args=self.args)
-        elif self.args.dataset == 'mnist':
-            global_model = CNN(args=self.args)
+        if self.dataset == 'cifar':
+            global_model = CNNCifar(num_channels=self.num_channels, num_classes=self.num_classes)
+        elif self.dataset == 'mnist':
+            global_model = CNN(num_channels=self.num_channels, num_classes=self.num_classes)
         return global_model
 
     def utility_computation(self, player_idxs):
@@ -151,7 +150,6 @@ class FL():
         # model initialize and training
         # FedAvg
         global_model = self.model_initiation()
-        # loss_func = torch.nn.CrossEntropyLoss()
         for ridx in range(self.max_round):
             localUpdates = dict()
             p_k = dict()
