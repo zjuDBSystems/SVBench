@@ -325,10 +325,8 @@ def init_random_seed(manual_seed):
         torch.cuda.manual_seed_all(seed)
 
 
-def data_prepare(manual_seed,
-                 dataset,
-                 num_classes,
-                 data_allocation=0, num_trainDatasets=1, group_size='1', multiplier='1', data_size_group=1, data_size_mean=100.0):
+def data_prepare(manual_seed, dataset, num_classes, data_allocation=0, num_trainDatasets=1,
+                 group_size='1', multiplier='1', data_size_group=1, data_size_mean=100.0):
     init_random_seed(manual_seed)
 
     # load dataset and split workers

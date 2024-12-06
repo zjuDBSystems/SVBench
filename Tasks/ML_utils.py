@@ -11,7 +11,7 @@ from .Nets import CNN, RegressionModel, LinearAttackModel, CNNCifar, NN
 TEST_BS = 128
 
 
-def find_free_gpu():
+def find_free_device():
     """
     Find and return the index of the most free GPU.
     Return -1 if no GPU is available.
@@ -28,7 +28,10 @@ def find_free_gpu():
             free_gpu_index = gpu_index
             free_gpu_memory = gpu_memory_allocated
 
-    return free_gpu_index
+    return torch.device(
+        'cuda:{}'.format(free_gpu_index)
+        if free_gpu_index != -1 and torch.cuda.is_available() else 'cpu'
+    )
 
 
 def DNNTrain(model, trn_data, lr, epoch=1, batch_size=128, loss_func=None,
@@ -37,10 +40,7 @@ def DNNTrain(model, trn_data, lr, epoch=1, batch_size=128, loss_func=None,
     model = copy.deepcopy(model)
     if type(model) == CNN or type(model) == CNNCifar or type(model) == NN or \
             type(model) == RegressionModel or type(model) == LinearAttackModel:
-        device = torch.device(
-            'cuda:{}'.format(find_free_gpu())
-            if torch.cuda.is_available() else 'cpu'
-        )
+        device = find_free_device()
         model = model.to(device)
 
         print_flag = False
@@ -122,10 +122,7 @@ def DNNTest(model, test_data,
             device = param.device
 
         else:
-            device = torch.device(
-                'cuda:{}'.format(find_free_gpu())
-                if torch.cuda.is_available() else 'cpu'
-            )
+            device = find_free_device()
         del param
 
         ldr_eval = DataLoader(test_data,

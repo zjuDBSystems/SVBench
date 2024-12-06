@@ -52,6 +52,8 @@ class Task():
         self.init_flag = True
 
         self.task = args.task
+        self.dataset = args.dataset
+        self.manual_seed = args.manual_seed
         self.utility_function = self.utility_computation_func_load(
             args.utility_function)
         if self.utility_function is None:
@@ -69,7 +71,7 @@ class Task():
         self.dirty_utility_record_num = 0
 
         if args.task in BENCHMARK:
-            self.player_num = BENCHMARK[args.task][args.dataset]
+            self.player_num = BENCHMARK[args.task][self.dataset]
             full_check_type = BENCHMARK_ALGO[args.algo][0]
         else:
             self.player_num = args.player_num
@@ -98,10 +100,17 @@ class Task():
 
     def utility_computation_func_load(self, utility_function_api):
         if self.task == 'DV':
-            DV = data_valuation.DV(self.args)
+            DV = data_valuation.DV(
+                dataset=self.dataset,
+                manual_seed=self.manual_seed,
+                GA=self.GA, TSS=self.TSS)
             return DV.utility_computation
-        # elif self.task == 'FL':
-        #     return federated_learning.utility_computation
+        elif self.task == 'FL':
+            FL = federated_learning.FL(
+                dataset=self.dataset,
+                manual_seed=self.manual_seed,
+                GA=self.GA, TSS=self.TSS)
+            return FL.utility_computation
         # elif self.task == 'RI':
         #     return result_interpretation.utility_computation
         else:
@@ -109,17 +118,13 @@ class Task():
 
     def utility_computation_call(self, player_list):
         utility_record_idx = str(
-            sorted(player_list) if not self.GA else player_list)
+            sorted(player_list) if self.task == 'FL' or (not self.GA) else player_list)
         if utility_record_idx in self.utility_records:
             return self.utility_records[utility_record_idx][0], -1
 
         start_time = time.time()
         try:
-            if self.task in BENCHMARK:
-                utility = self.utility_function(
-                    player_list, GA=self.GA, TSS=self.TSS)
-            else:
-                utility = self.utility_function(player_list)
+            utility = self.utility_function(player_list)
             time_cost = time.time() - start_time
             self.write_utility_record(utility_record_idx, utility, time_cost)
         except Exception as e:
@@ -151,7 +156,7 @@ class Task():
               np.mean(list(utility_computation_timecost.values())))
 
     def read_history_utility_record(self):
-        self.utility_record_file = f'./Tasks/utility_records/{self.task}{"_GA" if self.GA else ""}.log' \
+        self.utility_record_file = f'./Tasks/utility_records/{self.task}_{self.dataset}_{self.manual_seed}{"_GA" if self.GA else ""}{"_TSS" if self.TSS else ""}.log' \
             if self.utility_record_file == '' else self.utility_record_file
 
         if os.path.exists(self.utility_record_file):
