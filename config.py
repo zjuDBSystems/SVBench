@@ -111,14 +111,19 @@ class Task():
                 manual_seed=self.manual_seed,
                 GA=self.GA, TSS=self.TSS)
             return FL.utility_computation
-        # elif self.task == 'RI':
-        #     return result_interpretation.utility_computation
+        elif self.task == 'RI':
+            RI = result_interpretation.RI(
+                dataset=self.dataset,
+                manual_seed=self.manual_seed,
+                GA=self.GA, TSS=self.TSS,
+                parallel_threads_num=self.parallel_threads_num)
+            return FL.utility_computation
         else:
             return utility_function_api
 
     def utility_computation_call(self, player_list):
         utility_record_idx = str(
-            sorted(player_list) if self.task == 'FL' or (not self.GA) else player_list)
+            sorted(player_list) if self.task != 'DV' or (not self.GA) else player_list)
         if utility_record_idx in self.utility_records:
             return self.utility_records[utility_record_idx][0], -1
 

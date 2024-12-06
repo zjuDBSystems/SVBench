@@ -1,5 +1,6 @@
 import torch
 import copy
+import os
 
 from .data_preparation import data_prepare
 from .Nets import RegressionModel, NN
@@ -20,12 +21,14 @@ class DV():
         self.model = None
         self.dataset = dataset
 
-        data_prepare(manual_seed=manual_seed,
-                     dataset=dataset,
-                     num_classes=self.num_classes)
+        trn_path = 'data/%s0/train0.pt' % (dataset)
+        if not os.path.exists(trn_path):
+            data_prepare(manual_seed=manual_seed,
+                         dataset=dataset,
+                         num_classes=self.num_classes)
 
         # player setting
-        self.trn_data = torch.load('data/%s0/train0.pt' % (dataset))
+        self.trn_data = torch.load(trn_path)
         self.players = self.trn_data
 
         self.Tst = torch.load('data/%s0/test.pt' % (dataset))

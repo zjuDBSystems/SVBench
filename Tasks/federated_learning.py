@@ -25,11 +25,13 @@ class FL():
         self.device = find_free_device()
         self.model = None
 
-        data_prepare(manual_seed=manual_seed, dataset=dataset, num_classes=self.num_classes,
-                     data_allocation=1, num_trainDatasets=10, group_size='10',
-                     multiplier=multiplier, data_size_mean=1000)
+        tst_path = 'data/%s1/test.pt' % (dataset)
+        if not os.path.exists(tst_path):
+            data_prepare(manual_seed=manual_seed, dataset=dataset, num_classes=self.num_classes,
+                         data_allocation=1, num_trainDatasets=10, group_size='10',
+                         multiplier=multiplier, data_size_mean=1000)
 
-        self.Tst = torch.load('data/%s1/test.pt' % (dataset))
+        self.Tst = torch.load(tst_path)
         self.stored_gradients = dict()
 
         # player setting
@@ -61,7 +63,7 @@ class FL():
                     pstar_time = time.time()
                     localUpdates[player_idx] = DNNTrain(
                         model=global_model, trn_data=self.player_datasets[player_idx],
-                        lr=self.lr*(self.decay_rate**ridx), epoch=self.local_ep, 
+                        lr=self.lr*(self.decay_rate**ridx), epoch=self.local_ep,
                         batch_size=self.local_bs, loss_func=loss_func).state_dict()
                     p_k[player_idx] = len(self.player_datasets[player_idx])
                     torch.save(localUpdates[player_idx],
@@ -109,9 +111,11 @@ class FL():
 
     def model_initiation(self):
         if self.dataset == 'cifar':
-            global_model = CNNCifar(num_channels=self.num_channels, num_classes=self.num_classes)
+            global_model = CNNCifar(
+                num_channels=self.num_channels, num_classes=self.num_classes)
         elif self.dataset == 'mnist':
-            global_model = CNN(num_channels=self.num_channels, num_classes=self.num_classes)
+            global_model = CNN(num_channels=self.num_channels,
+                               num_classes=self.num_classes)
         return global_model
 
     def utility_computation(self, player_idxs):
