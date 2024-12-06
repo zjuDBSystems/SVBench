@@ -50,7 +50,8 @@ class Task():
         self.init_flag = True
 
         self.task = args.task
-        self.utility_function = self.utility_computation_func_load(args.utility_function)
+        self.utility_function = self.utility_computation_func_load(
+            args.utility_function)
         if self.utility_function is None:
             self.init_flag = False
             return
@@ -71,7 +72,6 @@ class Task():
         else:
             self.player_num = args.player_num
             full_check_type = args.full_check
-
 
         self.shapley = Shapley(
             player_num=self.player_num,
@@ -151,7 +151,7 @@ class Task():
     def read_history_utility_record(self):
         self.utility_record_file = f'./Tasks/utility_records/{self.task}{"_GA" if self.GA else ""}.log' \
             if self.utility_record_file == '' else self.utility_record_file
-        
+
         if os.path.exists(self.utility_record_file):
             with portalocker.Lock(self.utility_record_file, 'r', encoding='utf-8', flags=portalocker.LOCK_SH) as file:
                 utility_records = ast.literal_eval(file.read().strip())
@@ -176,7 +176,8 @@ class Task():
             with portalocker.Lock(self.utility_record_file, mode="r+", timeout=0) as file:
                 with self.utility_record_write_lock:
                     if not create:
-                        self.utility_records.update(ast.literal_eval(file.read().strip()))
+                        self.utility_records.update(
+                            ast.literal_eval(file.read().strip()))
                     self.dirty_utility_record_num = 0
                     ur = self.utility_records.copy()
                 file.seek(0)
