@@ -132,8 +132,7 @@ class RI():
             self.threads = []
 
     def train_model(self):
-        model_path = 'models/attribution_%s-%s.pt' % (
-            self.task,
+        model_path = 'models/attribution_RI-%s.pt' % (
             (self.dataset if self.manual_seed == 42
              else (self.dataset+"-"+str(self.manual_seed)))
         )
@@ -141,9 +140,7 @@ class RI():
             self.model = torch.load(model_path, map_location=self.device)
             testData = self.Tst
             print('Given model accuracy: ',
-                  DNNTest(self.model, testData,
-                          test_bs=len(self.X_test),
-                          metric='tst_accuracy',
+                  DNNTest(model=self.model, test_data=testData,
                           pred_print=True)
                   )
             return
@@ -170,7 +167,7 @@ class RI():
         dataset = Tst.dataset.reshape((ori_shape[0], -1))
         dataset[:, replace_idxs] = torch.FloatTensor(replace_val)
         Tst.dataset = dataset.reshape(ori_shape)
-        results.put(DNNTest(self.model, Tst))
+        results.put(DNNTest(model=self.model, test_data=Tst, metric='prediction'))
 
     def utility_computation(self, player_idxs):
         utility = 0.0
@@ -189,7 +186,6 @@ class RI():
                 args=(replace_idxs, replace_val, results))
             self.threads_controller('add', thread)
         self.threads_controller('finish')
-
         predictions = np.sum(list(results.queue), 0)/len(baselines)
         utility = predictions.sum()/reduce((lambda x, y: x*y), predictions.shape)
 
