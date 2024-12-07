@@ -9,3 +9,4 @@ data/*
 Tasks/utility_records/*
 log.txt
 models/*
+*.log

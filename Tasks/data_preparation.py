@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from torchvision import datasets, transforms
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_iris, load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, minmax_scale
 from torch.utils.data import Dataset
@@ -140,36 +140,28 @@ def get_datasets(dataset):
         print('iris test data shape:', x_test.shape)
         print('iris labels:', set(y_train.numpy().tolist()))
 
-    elif dataset == 'adult':
-        # Dataset is acquired from the following link:
-        # https://archive.ics.uci.edu/ml/datasets/adult
-        train = load_AdultData('./data/adult/adult_data.csv')
-        X_train = train.drop('income', axis=1).to_numpy()
-        # normalize
-        X_train = minmax_scale(X_train, feature_range=(0, 1))
-        y_train = train['income'].to_numpy()
-        dataset_train = ImageDataset(X_train, y_train,
-                                     len(X_train), range(len(X_train)))
+    elif dataset == 'wine':
+        wine = load_wine()
+        x = wine.data
+        y = wine.target
+        # Split dataset
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, test_size=0.2)
 
-        test = load_AdultData('./data/adult/adult_test.csv')
-        X_test = test.drop('income', axis=1).to_numpy()
-        # normalize
-        X_test = minmax_scale(X_test, feature_range=(0, 1))
-        y_test = test['income'].to_numpy()
-        test_idxs1 = np.random.choice(np.where(y_test == 0)[0],
-                                      200, replace=False).tolist()
-        test_idxs2 = np.random.choice(np.where(y_test == 1)[0],
-                                      200, replace=False).tolist()
-        test_idxs = test_idxs1+test_idxs2
-        print('selected_idx:', test_idxs, X_test[test_idxs, :].shape)
-        dataset_test = ImageDataset(X_test[test_idxs, :], y_test[test_idxs],
-                                    len(test_idxs), range(len(test_idxs)))
+        x_train = torch.FloatTensor(x_train)
+        x_test = torch.FloatTensor(x_test)
+        y_train = torch.LongTensor(y_train)
+        y_test = torch.LongTensor(y_test)
 
-        print('adult train data shape:', dataset_train.dataset.shape)
-        print('adult train data sample:', X_train[0])
-        print('adult test data shape:', dataset_test.dataset.shape)
-        print('adult test data sample:', dataset_test.dataset[0])
-        print('adult labels:', set(dataset_test.labels))
+        dataset_train = ImageDataset(x_train, y_train,
+                                     len(x_train), range(len(x_train)))
+        dataset_test = ImageDataset(x_test, y_test,
+                                    len(x_test), range(len(x_test)))
+        # img_size = x_train[0].shape
+        print('wine train data shape:', x_train.shape)
+        print('wine test data shape:', x_test.shape)
+        print('wine labels:', set(y_train.numpy().tolist()))
+
     else:
         exit('Error: unrecognized dataset')
 
