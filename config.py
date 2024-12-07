@@ -1,13 +1,12 @@
 import threading
 import sys
-import importlib
 import os
 import numpy as np
+import json
 import portalocker
-import ast
 import time
 
-from Tasks import data_valuation, federated_learning, result_interpretation
+from Tasks import data_valuation, federated_learning, result_interpretation, dataset_valuation
 from calculator import Shapley
 from sampler import Sampler
 from output import Output
@@ -24,6 +23,10 @@ BENCHMARK_ALGO = {
 }
 BENCHMARK = {
     'DV': {
+        'iris': (120),
+        'wine': (142),
+    },
+    'DSV': {
         'iris': (120),
         'wine': (142),
     },
@@ -95,7 +98,6 @@ class Task():
                 privacy_protection_measure=args.privacy,
                 privacy_protection_level=args.privacy_level))
 
-        self.task_terminated = False
         self.flush_event = threading.Event()
 
     def utility_computation_func_load(self, utility_function_api):
@@ -117,29 +119,31 @@ class Task():
                 manual_seed=self.manual_seed,
                 GA=self.GA, TSS=self.TSS,
                 parallel_threads_num=self.parallel_threads_num)
-            return FL.utility_computation
+            return RI.utility_computation
+        elif self.task == 'DSV':
+            DSV = dataset_valuation.DSV(
+                dataset=self.dataset,
+                manual_seed=self.manual_seed,
+                GA=self.GA, TSS=self.TSS,
+                parallel_threads_num=self.parallel_threads_num)
+            return DSV.utility_computation
         else:
             return utility_function_api
 
     def utility_computation_call(self, player_list):
         utility_record_idx = str(
-            sorted(player_list) if self.task != 'DV' or (not self.GA) else player_list)
+            sorted(player_list) if (self.task != 'DV' and self.task != 'DSV') or (not self.GA) else player_list)
         if utility_record_idx in self.utility_records:
             return self.utility_records[utility_record_idx][0], -1
 
         start_time = time.time()
-        try:
-            utility = self.utility_function(player_list)
-            time_cost = time.time() - start_time
-            self.write_utility_record(utility_record_idx, utility, time_cost)
-        except Exception as e:
-            print(
-                f"Call utility computation error:\n{e}")
-            exit(-1)
+        utility = self.utility_function(player_list)
+        time_cost = time.time() - start_time
+        self.write_utility_record(utility_record_idx, utility, time_cost)
         return utility, time_cost
 
     def printFlush(self):
-        while not self.task_terminated:
+        while True:
             if self.flush_event.wait(OUT_PRINT_FLUSH_INTERVAL):
                 sys.stdout.flush()
 
@@ -151,7 +155,7 @@ class Task():
     def pre_exp_statistic(self):
         utility_computation_timecost = dict()
         for player_idx in range(self.player_num):
-            if self.task == 'DV':
+            if self.task in ['DV', 'DSV']:
                 utility, time_cost = self.utility_computation_call(
                     range(player_idx))
                 print(
@@ -166,7 +170,8 @@ class Task():
 
         if os.path.exists(self.utility_record_file):
             with portalocker.Lock(self.utility_record_file, 'r', encoding='utf-8', flags=portalocker.LOCK_SH) as file:
-                utility_records = ast.literal_eval(file.read().strip())
+                utility_records = eval(file.read().strip())
+                # utility_records = json.load(file)
             return utility_records
         else:
             return {str([]): (0, 0)}
@@ -188,8 +193,8 @@ class Task():
             with portalocker.Lock(self.utility_record_file, mode="r+", timeout=0) as file:
                 with self.utility_record_write_lock:
                     if not create:
-                        self.utility_records.update(
-                            ast.literal_eval(file.read().strip()))
+                        self.utility_records.update(eval(file.read().strip()))
+                        # self.utility_records.update(json.load(file))
                     self.dirty_utility_record_num = 0
                     ur = self.utility_records.copy()
                 file.seek(0)

@@ -1,13 +1,4 @@
-import argparse
 import sys
-import numpy as np
-import copy
-import random
-import torch
-import time
-import json
-import portalocker
-import os
 
 from collections import namedtuple
 
@@ -88,4 +79,5 @@ def sv_calc(**kwargs):
 if __name__ == '__main__':
     # sv_calc(task='DV',
     #         dataset='iris')
-    sv_calc(task='FL', dataset='mnist')
+    # sv_calc(task='FL', dataset='mnist')
+    sv_calc(task='RI', dataset='wine')
