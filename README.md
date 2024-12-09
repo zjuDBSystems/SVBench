@@ -183,11 +183,11 @@ python exp.py --task=RI --dataset=iris --base_algo=GT
 python exp.py --task=RI --dataset=iris --base_algo=CP
 
 # hybrid algorithms
-python exp.py --task=RI --dataset=iris --base_algo=MC --optimization=TC
-python exp.py --task=RI --dataset=iris --base_algo=MLE --optimization=TC
-python exp.py --task=RI --dataset=iris --base_algo=RE --optimization=TC
-python exp.py --task=RI --dataset=iris --base_algo=GT --optimization=TC
-python exp.py --task=RI --dataset=iris --base_algo=CP --optimization=TC
+python exp.py --task=RI --dataset=iris --base_algo=MC --optimization_strategy=TC
+python exp.py --task=RI --dataset=iris --base_algo=MLE --optimization_strategy=TC
+python exp.py --task=RI --dataset=iris --base_algo=RE --optimization_strategy=TC
+python exp.py --task=RI --dataset=iris --base_algo=GT --optimization_strategy=TC
+python exp.py --task=RI --dataset=iris --base_algo=CP --optimization_strategy=TC
 ```
 
 (2) experiments on **RI_Wine** task
@@ -201,11 +201,11 @@ python exp.py --task=RI --dataset=wine --base_algo=GT
 python exp.py --task=RI --dataset=wine --base_algo=CP
 
 # hybrid algorithms
-python exp.py --task=RI --dataset=wine --base_algo=MC --optimization=TC
-python exp.py --task=RI --dataset=wine --base_algo=MLE --optimization=TC
-python exp.py --task=RI --dataset=wine --base_algo=RE --optimization=TC
-python exp.py --task=RI --dataset=wine --base_algo=GT --optimization=TC
-python exp.py --task=RI --dataset=wine --base_algo=CP --optimization=TC
+python exp.py --task=RI --dataset=wine --base_algo=MC --optimization_strategy=TC
+python exp.py --task=RI --dataset=wine --base_algo=MLE --optimization_strategy=TC
+python exp.py --task=RI --dataset=wine --base_algo=RE --optimization_strategy=TC
+python exp.py --task=RI --dataset=wine --base_algo=GT --optimization_strategy=TC
+python exp.py --task=RI --dataset=wine --base_algo=CP --optimization_strategy=TC
 ```
 
 (3) experiments on **DV_Iris** task
@@ -219,19 +219,19 @@ python exp.py --task=DV --dataset=iris --base_algo=GT
 python exp.py --task=DV --dataset=iris --base_algo=CP
 
 # hybrid algorithms
-python exp.py --task=DV --dataset=iris --base_algo=MC --optimization=TC
-python exp.py --task=DV --dataset=iris --base_algo=MLE --optimization=TC
-python exp.py --task=DV --dataset=iris --base_algo=RE --optimization=TC
-python exp.py --task=DV --dataset=iris --base_algo=GT --optimization=TC
-python exp.py --task=DV --dataset=iris --base_algo=CP --optimization=TC
+python exp.py --task=DV --dataset=iris --base_algo=MC --optimization_strategy=TC
+python exp.py --task=DV --dataset=iris --base_algo=MLE --optimization_strategy=TC
+python exp.py --task=DV --dataset=iris --base_algo=RE --optimization_strategy=TC
+python exp.py --task=DV --dataset=iris --base_algo=GT --optimization_strategy=TC
+python exp.py --task=DV --dataset=iris --base_algo=CP --optimization_strategy=TC
 
-python exp.py --task=DV --dataset=iris --base_algo=MC --optimization=GA
-python exp.py --task=DV --dataset=iris --base_algo=RE --optimization=GA
-python exp.py --task=DV --dataset=iris --base_algo=CP --optimization=GA
+python exp.py --task=DV --dataset=iris --base_algo=MC --optimization_strategy=GA
+python exp.py --task=DV --dataset=iris --base_algo=RE --optimization_strategy=GA
+python exp.py --task=DV --dataset=iris --base_algo=CP --optimization_strategy=GA
 
-python exp.py --task=DV --dataset=iris --base_algo=MC --optimization=TC+GA
-python exp.py --task=DV --dataset=iris --base_algo=RE --optimization=TC+GA
-python exp.py --task=DV --dataset=iris --base_algo=CP --optimization=TC+GA
+python exp.py --task=DV --dataset=iris --base_algo=MC --optimization_strategy=TC+GA
+python exp.py --task=DV --dataset=iris --base_algo=RE --optimization_strategy=TC+GA
+python exp.py --task=DV --dataset=iris --base_algo=CP --optimization_strategy=TC+GA
 ```
 
 (4) experiments on **DV_Wine** task
@@ -245,19 +245,19 @@ python exp.py --task=DV --dataset=wine --base_algo=GT
 python exp.py --task=DV --dataset=wine --base_algo=CP
 
 # hybrid algorithms
-python exp.py --task=DV --dataset=wine --base_algo=MC --optimization=TC
-python exp.py --task=DV --dataset=wine --base_algo=MLE --optimization=TC
-python exp.py --task=DV --dataset=wine --base_algo=RE --optimization=TC
-python exp.py --task=DV --dataset=wine --base_algo=GT --optimization=TC
-python exp.py --task=DV --dataset=wine --base_algo=CP --optimization=TC
+python exp.py --task=DV --dataset=wine --base_algo=MC --optimization_strategy=TC
+python exp.py --task=DV --dataset=wine --base_algo=MLE --optimization_strategy=TC
+python exp.py --task=DV --dataset=wine --base_algo=RE --optimization_strategy=TC
+python exp.py --task=DV --dataset=wine --base_algo=GT --optimization_strategy=TC
+python exp.py --task=DV --dataset=wine --base_algo=CP --optimization_strategy=TC
 
-python exp.py --task=DV --dataset=wine --base_algo=MC --optimization=GA
-python exp.py --task=DV --dataset=wine --base_algo=RE --optimization=GA
-python exp.py --task=DV --dataset=wine --base_algo=CP --optimization=GA
+python exp.py --task=DV --dataset=wine --base_algo=MC --optimization_strategy=GA
+python exp.py --task=DV --dataset=wine --base_algo=RE --optimization_strategy=GA
+python exp.py --task=DV --dataset=wine --base_algo=CP --optimization_strategy=GA
 
-python exp.py --task=DV --dataset=wine --base_algo=MC --optimization=TC+GA
-python exp.py --task=DV --dataset=wine --base_algo=RE --optimization=TC+GA
-python exp.py --task=DV --dataset=wine --base_algo=CP --optimization=TC+GA
+python exp.py --task=DV --dataset=wine --base_algo=MC --optimization_strategy=TC+GA
+python exp.py --task=DV --dataset=wine --base_algo=RE --optimization_strategy=TC+GA
+python exp.py --task=DV --dataset=wine --base_algo=CP --optimization_strategy=TC+GA
 ```
 
 (5) experiments on **FL_Mnist** task
@@ -271,35 +271,35 @@ python exp.py --task=FL --dataset=mnist --base_algo=GT
 python exp.py --task=FL --dataset=mnist --base_algo=CP
 
 # hybrid algorithms
-python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization=TC
-python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization=TC
-python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization=TC
-python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization=TC
-python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization=TC
+python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization_strategy=TC
+python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization_strategy=TC
+python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization_strategy=TC
+python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization_strategy=TC
+python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization_strategy=TC
 
-python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization=GA
-python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization=GA
-python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization=GA
-python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization=GA
-python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization=GA
+python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization_strategy=GA
+python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization_strategy=GA
+python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization_strategy=GA
+python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization_strategy=GA
+python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization_strategy=GA
 
-python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization=GA+TSS
-python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization=GA+TSS
-python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization=GA+TSS
-python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization=GA+TSS
-python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization=GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization_strategy=GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization_strategy=GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization_strategy=GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization_strategy=GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization_strategy=GA+TSS
 
-python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization=TC+GA
-python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization=TC+GA
-python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization=TC+GA
-python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization=TC+GA
-python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization=TC+GA
+python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization_strategy=TC+GA
+python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization_strategy=TC+GA
+python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization_strategy=TC+GA
+python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization_strategy=TC+GA
+python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization_strategy=TC+GA
 
-python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization=TC+GA+TSS
-python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization=TC+GA+TSS
-python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization=TC+GA+TSS
-python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization=TC+GA+TSS
-python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization=TC+GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=MC --optimization_strategy=TC+GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=MLE --optimization_strategy=TC+GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=RE --optimization_strategy=TC+GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=GT --optimization_strategy=TC+GA+TSS
+python exp.py --task=FL --dataset=mnist --base_algo=CP --optimization_strategy=TC+GA+TSS
 ```
 
 (6) experiments on **FL_Cifar** task
@@ -313,35 +313,35 @@ python exp.py --task=FL --dataset=cifar --base_algo=GT
 python exp.py --task=FL --dataset=cifar --base_algo=CP
 
 # hybrid algorithms
-python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization=TC
-python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization=TC
-python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization=TC
-python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization=TC
-python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization=TC
+python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization_strategy=TC
+python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization_strategy=TC
+python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization_strategy=TC
+python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization_strategy=TC
+python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization_strategy=TC
 
-python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization=GA
-python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization=GA
-python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization=GA
-python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization=GA
-python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization=GA
+python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization_strategy=GA
+python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization_strategy=GA
+python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization_strategy=GA
+python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization_strategy=GA
+python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization_strategy=GA
 
-python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization=GA+TSS
-python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization=GA+TSS
-python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization=GA+TSS
-python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization=GA+TSS
-python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization=GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization_strategy=GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization_strategy=GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization_strategy=GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization_strategy=GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization_strategy=GA+TSS
 
-python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization=TC+GA
-python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization=TC+GA
-python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization=TC+GA
-python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization=TC+GA
-python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization=TC+GA
+python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization_strategy=TC+GA
+python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization_strategy=TC+GA
+python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization_strategy=TC+GA
+python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization_strategy=TC+GA
+python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization_strategy=TC+GA
 
-python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization=TC+GA+TSS
-python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization=TC+GA+TSS
-python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization=TC+GA+TSS
-python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization=TC+GA+TSS
-python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization=TC+GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=MC --optimization_strategy=TC+GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=MLE --optimization_strategy=TC+GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=RE --optimization_strategy=TC+GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=GT --optimization_strategy=TC+GA+TSS
+python exp.py --task=FL --dataset=cifar --base_algo=CP --optimization_strategy=TC+GA+TSS
 ```
 
 ### Instructions for the **second** set of experiments
