@@ -202,6 +202,7 @@ class FL():
                 # aggregation
                 agg_results = self.weighted_avg(localUpdates, p_k)
                 global_model.load_state_dict(agg_results)
+            del localUpdates
         testData = self.Tst
         if self.TSS and len(player_idxs) > 0:
             skippable_test_sample_idxs = set(range(len(self.Tst)))
@@ -213,6 +214,6 @@ class FL():
             testData.idxs = list(complete_idx - skippable_test_sample_idxs)
 
         utility = DNNTest(global_model, testData)
-        del global_model, localUpdates, testData
+        del global_model, testData
         torch.cuda.empty_cache()
         return utility
