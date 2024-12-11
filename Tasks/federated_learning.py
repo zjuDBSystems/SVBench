@@ -131,8 +131,7 @@ class FL():
                 global_model.load_state_dict(agg_results)
                 print(f'Round {ridx} time cost: {time.time()-start_time}')
         print('skippable_test_sample: ', self.skippable_test_sample)
-        
-        
+
     def weighted_avg(self, w_locals, p_k):
         parameter_keys = list(w_locals.values())[0].keys()
         idx_keys = list(w_locals.keys())
@@ -192,16 +191,18 @@ class FL():
         # model initialize and training
         # FedAvg
         global_model = self.model_initiation()
-        for ridx in range(self.max_round):
-            localUpdates = dict()
-            p_k = dict()
-            for player_idx in player_idxs:
-                # local model training
-                localUpdates[player_idx] = self.players[player_idx][ridx]
-                p_k[player_idx] = self.player_data_size[player_idx]
-            # aggregation
-            agg_results = self.weighted_avg(localUpdates, p_k)
-            global_model.load_state_dict(agg_results)
+        if len(player_idxs) > 0:
+            for ridx in range(self.max_round):
+                localUpdates = dict()
+                p_k = dict()
+                for player_idx in player_idxs:
+                    # local model training
+                    localUpdates[player_idx] = self.players[player_idx][ridx]
+                    p_k[player_idx] = self.player_data_size[player_idx]
+                # aggregation
+                agg_results = self.weighted_avg(localUpdates, p_k)
+                global_model.load_state_dict(agg_results)
+        testData = self.Tst
         if self.TSS and len(player_idxs) > 0:
             skippable_test_sample_idxs = set(range(len(self.Tst)))
             for player_idx in player_idxs:
@@ -210,11 +211,8 @@ class FL():
             complete_idx = set(range(len(self.Tst)))
             testData = copy.deepcopy(self.Tst)
             testData.idxs = list(complete_idx - skippable_test_sample_idxs)
-        else:
-            testData = self.Tst
+
         utility = DNNTest(global_model, testData)
-        if self.TSS and len(player_idxs) > 0:
-            del testData
-        del global_model, localUpdates
+        del global_model, localUpdates, testData
         torch.cuda.empty_cache()
         return utility
