@@ -17,7 +17,7 @@ class FL():
         self.manual_seed = manual_seed
         self.dataset_info = {
             'cifar': (10, 10, 10, 3, 3, 64, 0.1, 1, '5'),
-            'mnist': (10, 10, 10, 1, 3, 64, 0.1, 1, '6')
+            'mnist': (10, 10, 10, 1, 1, 64, 0.1, 1, '6')
         }
         self.num_classes, self.num_clients, self.max_round,     \
             self.num_channels, self.local_ep, self.local_bs,    \
@@ -56,6 +56,7 @@ class FL():
             for trainer_idx in range(len(self.player_datasets))]
         if False not in [os.path.exists(model_path)
                          for model_path in model_paths]:
+            print("Models loading...")
             global_model = self.model_initiation()
             for ridx in range(self.max_round):
                 localUpdates = dict()
@@ -72,13 +73,14 @@ class FL():
                 # prepare stored_gradients and skippable_test_sample
                 self.stored_gradients[ridx] = (localUpdates, p_k,
                                                global_model.state_dict())
-                for player_idx, local_model in localUpdates.items():
-                    tmp_model = self.model_initiation()
-                    tmp_model.load_state_dict(local_model)
-                    DNNTest(tmp_model, self.Tst,
-                            record_skippable_sample=(
-                                self.skippable_test_sample[ridx],
-                                player_idx))
+                if self.TSS:
+                    for player_idx, local_model in localUpdates.items():
+                        tmp_model = self.model_initiation()
+                        tmp_model.load_state_dict(local_model)
+                        DNNTest(tmp_model, self.Tst,
+                                record_skippable_sample=(
+                                    self.skippable_test_sample[ridx],
+                                    player_idx))
                 # aggregation
                 agg_results = self.weighted_avg(localUpdates, p_k)
                 global_model.load_state_dict(agg_results)
@@ -118,20 +120,22 @@ class FL():
                 # prepare stored_gradients and skippable_test_sample
                 self.stored_gradients[ridx] = (localUpdates, p_k,
                                                global_model.state_dict())
-                for player_idx, local_model in localUpdates.items():
-                    tmp_model = self.model_initiation()
-                    tmp_model.load_state_dict(local_model)
-                    DNNTest(tmp_model, self.Tst,
-                            record_skippable_sample=(
-                                self.skippable_test_sample[ridx],
-                                player_idx))
+                if self.TSS:
+                    for player_idx, local_model in localUpdates.items():
+                        tmp_model = self.model_initiation()
+                        tmp_model.load_state_dict(local_model)
+                        DNNTest(tmp_model, self.Tst,
+                                record_skippable_sample=(
+                                    self.skippable_test_sample[ridx],
+                                    player_idx))
 
                 # aggregation
                 agg_results = self.weighted_avg(localUpdates, p_k)
                 global_model.load_state_dict(agg_results)
                 print(f'Round {ridx} time cost: {time.time()-start_time}')
-        print('skippable_test_sample: ', self.skippable_test_sample)
-
+        #print('skippable_test_sample: ', self.skippable_test_sample)
+        
+        
     def weighted_avg(self, w_locals, p_k):
         parameter_keys = list(w_locals.values())[0].keys()
         idx_keys = list(w_locals.keys())
@@ -175,7 +179,7 @@ class FL():
                 skippable_test_sample_idxs = set(range(len(self.Tst)))
                 for player_idx in player_idxs:
                     skippable_test_sample_idxs  \
-                        = skippable_test_sample_idxs & self.skippable_test_sample[player_idx]
+                        = skippable_test_sample_idxs & self.skippable_test_sample[ridx][player_idx]
                 complete_idx = set(range(len(self.Tst)))
                 testData = copy.deepcopy(self.Tst)
                 testData.idxs = list(complete_idx - skippable_test_sample_idxs)
@@ -187,7 +191,8 @@ class FL():
             del global_model
             torch.cuda.empty_cache()
             return utility
-
+        
+        
         # model initialize and training
         # FedAvg
         global_model = self.model_initiation()
@@ -204,15 +209,6 @@ class FL():
                 global_model.load_state_dict(agg_results)
             del localUpdates
         testData = self.Tst
-        if self.TSS and len(player_idxs) > 0:
-            skippable_test_sample_idxs = set(range(len(self.Tst)))
-            for player_idx in player_idxs:
-                skippable_test_sample_idxs = skippable_test_sample_idxs & self.skippable_test_sample[
-                    player_idx]
-            complete_idx = set(range(len(self.Tst)))
-            testData = copy.deepcopy(self.Tst)
-            testData.idxs = list(complete_idx - skippable_test_sample_idxs)
-
         utility = DNNTest(global_model, testData)
         del global_model, testData
         torch.cuda.empty_cache()
