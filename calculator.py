@@ -10,7 +10,6 @@ from config import UTILITY_RECORD_FILEWRITE_INTERVAL
 
 warnings.filterwarnings('ignore')
 
-
 class Shapley():
     def __init__(self, task, player_num, dataset,
                  utility_function, argorithm,
