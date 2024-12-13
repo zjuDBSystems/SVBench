@@ -30,14 +30,13 @@ class Output():
             return False
         SVs, SVs_var, utility_comp_times, time_cost = self.aggregator.aggregate(
             results, self.task_total_utility, self.task_emptySet_utility)
-        if not full_sample:
-            if not self.checker.convergence_check(SVs_var):
-                print(f'Iteration {iter_times} done:')
-                print(f"Current SV: {SVs}")
-                print(
-                    f"Current times of utility computation: {utility_comp_times}")
-                return False
-        else:
+        print(f'Iteration {iter_times} done:')
+        print(f"Current SV: {SVs}")
+        print(f"Current times of utility computation: {utility_comp_times}")
+        if not self.checker.convergence_check(SVs_var) and not full_sample:
+            # not yet reach the algorithm termination criterion
+            return False
+        if full_sample: 
             print("Full sample!")
 
         self.privacy.privacy_protect(
@@ -68,7 +67,10 @@ class Aggregator():
         if self.algo == 'MC':
             self.SV_comp_times = dict([(player_id, 0)
                                        for player_id in range(self.player_num)])
-
+        if self.algo =='MLE':
+            self.num_comp = np.zeros(self.player_num)
+            self.e = np.zeros(self.player_num)
+            
         if self.algo == 'GT':
             self.utilities = []
             self.GT_epsilon = 0.00001
@@ -132,18 +134,16 @@ class Aggregator():
             self.SV_var[player_id].append(self.SV[player_id])
 
     def MLE_aggregate(self, results):
-        num_comp = np.zeros(self.player_num)
-        e = np.zeros(self.player_num)
         while not results.empty():
             (player_id, delta_utility, utility_comp_times, time_cost) = results.get()
             if player_id!=-1: 
-                e[player_id] += delta_utility
-                num_comp[player_id] += 1
+                self.e[player_id] += delta_utility
+                self.num_comp[player_id] += 1
             self.utility_comp_times += utility_comp_times
             self.time_cost += time_cost
 
         # update SV
-        self.SV = dict([(player_id, e[player_id] / num_comp[player_id])
+        self.SV = dict([(player_id, self.e[player_id] / self.num_comp[player_id])
                         for player_id in range(self.player_num)])
         for player_id in range(self.player_num):
             self.SV_var[player_id].append(self.SV[player_id])
@@ -299,6 +299,7 @@ class Privacy():
                     for key in SVs.keys()])
 
     def privacy_protect(self, SVs, SVs_var):
+        print('Adding privacy protection on the final output results...')
         if self.measure == 'DP':
             return self.differential_privacy(SVs)
         elif self.measure == 'QT':

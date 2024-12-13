@@ -3,8 +3,7 @@ import threading
 import queue
 import warnings
 import portalocker
-import os
-import sys
+import os, sys
 import numpy as np
 
 from config import UTILITY_RECORD_FILEWRITE_INTERVAL
@@ -94,15 +93,17 @@ class Shapley():
         return utility, time_cost
 
     def read_history_utility_record(self):
-        self.utility_record_file = './Tasks/utility_records/' +\
+        self.utility_record_file = './Tasks/utility_records/'+\
             f'{self.task}_{self.dataset}_{self.manual_seed}{"_GA" if self.GA else ""}{"_TSS" if self.TSS else ""}.json' \
             if self.utility_record_file == '' else self.utility_record_file
-
-        if not os.path.exists("/".join(self.utility_record_file.split('/')[:-1])):
-            os.mkdir("/".join(self.utility_record_file.split('/')[:-1]))
-
+        
+        if not os.path.exists("/".join( self.utility_record_file.split('/')[:-1])):
+            os.mkdir("/".join( self.utility_record_file.split('/')[:-1]))
+            
         if os.path.exists(self.utility_record_file):
-            with portalocker.Lock(self.utility_record_file, 'r', encoding='utf-8', flags=portalocker.LOCK_SH) as file:
+            with portalocker.Lock(self.utility_record_file, 'r', 
+                                  encoding='utf-8', 
+                                  flags=portalocker.LOCK_SH) as file:
                 utility_records = eval(file.read().strip())
                 # utility_records = json.load(file)
             return utility_records
@@ -124,10 +125,10 @@ class Shapley():
                 if not sys.platform.startswith("win"):
                     os.mknod(self.utility_record_file)
                 else:
-                    # for windows
-                    os.system(f'type NUL > {self.utility_record_file}')
+                    os.system(f'type NUL > {self.utility_record_file}')#for windows
                 create = True
-            with portalocker.Lock(self.utility_record_file, mode="r+", timeout=0) as file:
+            with portalocker.Lock(self.utility_record_file, 
+                                  mode="r+", timeout=300) as file:
                 with self.utility_record_write_lock:
                     if not create:
                         self.utility_records.update(eval(file.read().strip()))
@@ -161,7 +162,7 @@ class Shapley():
                 permutation[:order+1])
             time_cost += time_cost1
             comp_times += 1
-        results.put((player_id, aft_addition - bef_addition,
+        results.put((player_id, aft_addition -bef_addition, 
                      comp_times, time_cost))
 
     def MC(self, **kwargs):
@@ -203,9 +204,9 @@ class Shapley():
             # utility after adding the targeted player
             aft_addition, time_cost1 = self.utility_computation_call(
                 list(subset)+[player_id])
-        results.put((player_id, aft_addition - bef_addition,
+        results.put((player_id, aft_addition - bef_addition, 
                      1, time_cost1))
-
+        
     # refer to paper:
     # A Multilinear Sampling Algorithm to Estimate Shapley Values
     def MLE(self, **kwargs):
@@ -227,14 +228,14 @@ class Shapley():
         results = queue.Queue()
         I_mq = []
         q = np.random.rand()
-        MLE_M = 2
+        MLE_M=2
         print(f'MLE iteration(with probability_{q}) start!')
         compute_times = 0
-        # m = -1 # m represent the number of sampling occured in the current round
+        #m = -1 # m represent the number of sampling occured in the current round
         # call aggregate after computing utility for
         # around 2*self.player_num times
         # making MLE comparable with the other base algorithms
-        # while compute_times < 2*self.player_num:
+        #while compute_times < 2*self.player_num: 
         #    m += 1
         for m in range(MLE_M):
             I_mq, full_sample, iter_times = self.sampler.sample(
@@ -245,11 +246,11 @@ class Shapley():
                       for player_id_ in range(self.player_num)
                       if I_mq[player_id_] == 1]
             # utility before adding the targeted player
-            # put this computation outside the following "for" loop
+            # put this computation outside the following "for" loop 
             # for saving unncessary repeated computations
             bef_addition, time_cost = self.utility_computation_call(subset)
             results.put((-1, -1, 1, time_cost))
-
+            
             if self.parallel_threads_num == 1:
                 for player_id in range(self.player_num):
                     if player_id in subset:
@@ -270,49 +271,49 @@ class Shapley():
                         args=(bef_addition, player_id, subset, results))
                     self.threads_controller('add', thread)
                 self.threads_controller('finish')
-
+                                            
         return results, False, iter_times
 
     def GT_RE_parallelable_thread(self, selected_players, results):
         u, t = self.utility_computation_call(selected_players[:-1])
         compute_times = 1
         if self.if_truncation(u):
-            results.put(([int(player_id in selected_players)
-                          for player_id in range(self.player_num)],
+            results.put(([int(player_id in selected_players)\
+                          for player_id in range(self.player_num)], 
                          u, 1, t))
             self.truncation_coaliations.add(
                 ",".join(map(str, sorted(selected_players))))
             return
         u, t1 = self.utility_computation_call(selected_players)
         compute_times += 1
-        results.put(([int(player_id in selected_players)
-                      for player_id in range(self.player_num)],
+        results.put(([int(player_id in selected_players)\
+                      for player_id in range(self.player_num)], 
                      u, compute_times, t+t1))
 
     def GT(self, **kwargs):
         Z = 2 * sum([1/k for k in range(1, self.player_num)])
         q_k = [1/Z*(1/k+1/(self.player_num-k))
                for k in range(1, self.player_num)]
-
+        
         results = queue.Queue()
         # sampling coalitions
         selected_coalitions = []
         selected_players = []
         for _ in range(self.player_num):
             selected_players, full_sample, iter_times = self.sampler.sample(
-                q_k=q_k, last=selected_players)
+                q_k = q_k, last = selected_players)
             if full_sample:
                 # use break here since
                 # we need to process the case with len(selected_coalitions)>0
                 break
             selected_coalitions.append(selected_players)
-
-        if full_sample and len(selected_coalitions) == 0:
-            # only when full_sample=True and len(selected_coalitions) ==0
+        
+        if full_sample and len(selected_coalitions) ==0:
+            # only when full_sample=True and len(selected_coalitions) ==0 
             # are satisfied simultaneously
-            # we do not proceed to the following operations
+            # we do not proceed to the following operations 
             return results, True, iter_times
-
+        
         if self.parallel_threads_num == 1:
             for order, selected_players in enumerate(selected_coalitions):
                 self.GT_RE_parallelable_thread(selected_players, results)
@@ -351,12 +352,13 @@ class Shapley():
                 self.threads_controller('finish')
         return phi_t, False, iter_times
 
+
     def RE(self, **kwargs):
         results = queue.Queue()
         permutation, full_sample, iter_times = self.sampler.sample()
         if full_sample:
             return results, True, iter_times
-
+        
         if self.parallel_threads_num == 1:
             for order, _ in enumerate(permutation):
                 self.GT_RE_parallelable_thread(permutation[:order+1], results)
@@ -389,8 +391,8 @@ class Shapley():
                 base_comp_func = self.CP
         else:
             base_comp_func = self.argorithm
-
-        # algorithm start
+        
+        # algorithm start 
         results = None
         full_sample = False
         iter_times = 0
