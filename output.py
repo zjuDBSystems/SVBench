@@ -5,7 +5,6 @@ from scipy.optimize import minimize
 
 from checker import Checker
 
-
 class Output():
     def __init__(self,
                  convergence_threshold,
