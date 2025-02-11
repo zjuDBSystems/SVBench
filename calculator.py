@@ -40,6 +40,7 @@ class Shapley():
         self.truncation_coaliations = set()
         self.threads = []
 
+        self.scanned_coalition = set()
         self.utility_record_file = utility_record_file
         self.utility_records = self.read_history_utility_record()
         if self.utility_records is None:
@@ -82,14 +83,22 @@ class Shapley():
             sorted(player_list)
             if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
             else player_list)
+        
+        if utility_record_idx in self.scanned_coalition:
+            comp_count = 0
+        else:
+            comp_count = 1
+            self.scanned_coalition.add(utility_record_idx)
+            
         if utility_record_idx in self.utility_records:
-            return self.utility_records[utility_record_idx]
+            return self.utility_records[utility_record_idx][0], \
+                   self.utility_records[utility_record_idx][1], comp_count
 
         start_time = time.time()
         utility = self.utility_function(player_list)
         time_cost = time.time() - start_time
         self.write_utility_record(utility_record_idx, utility, time_cost)
-        return utility, time_cost
+        return utility, time_cost, comp_count
 
     def read_history_utility_record(self):
         self.utility_record_file = './Tasks/utility_records/'+\
@@ -145,22 +154,22 @@ class Shapley():
             else utility_change_rate < self.truncation_threshold
 
     def MC_CP_parallelable_thread(self, order, permutation, results):
-        comp_times = 1
         player_id = permutation[order]
         # utility before adding the targeted player
-        bef_addition, time_cost = self.utility_computation_call(
+        bef_addition, time_cost, comp_count = self.utility_computation_call(
             permutation[:order])
-
+        comp_times = comp_count
+        
         if self.if_truncation(bef_addition):
             aft_addition = bef_addition
             self.truncation_coaliations.add(
                 ",".join(map(str, sorted(permutation[:order+1]))))
         else:
             # utility after adding the targeted player
-            aft_addition, time_cost1 = self.utility_computation_call(
+            aft_addition, time_cost1, comp_count = self.utility_computation_call(
                 permutation[:order+1])
             time_cost += time_cost1
-            comp_times += 1
+            comp_times += comp_count
         results.put((player_id, aft_addition -bef_addition, 
                      comp_times, time_cost))
 
@@ -199,12 +208,14 @@ class Shapley():
             aft_addition = bef_addition
             self.truncation_coaliations.add(
                 ",".join(map(str, sorted(list(subset)+[player_id]))))
+            comp_times = 0
         else:
             # utility after adding the targeted player
-            aft_addition, time_cost1 = self.utility_computation_call(
+            aft_addition, time_cost1, comp_count = self.utility_computation_call(
                 list(subset)+[player_id])
+            comp_times = comp_count
         results.put((player_id, aft_addition - bef_addition, 
-                     1, time_cost1))
+                     comp_times, time_cost1))
         
     # refer to paper:
     # A Multilinear Sampling Algorithm to Estimate Shapley Values
@@ -247,8 +258,8 @@ class Shapley():
             # utility before adding the targeted player
             # put this computation outside the following "for" loop 
             # for saving unncessary repeated computations
-            bef_addition, time_cost = self.utility_computation_call(subset)
-            results.put((-1, -1, 1, time_cost))
+            bef_addition, time_cost, comp_count = self.utility_computation_call(subset)
+            results.put((-1, -1, comp_count, time_cost))
             
             if self.parallel_threads_num == 1:
                 for player_id in range(self.player_num):
@@ -274,17 +285,17 @@ class Shapley():
         return results, False, iter_times
 
     def GT_RE_parallelable_thread(self, selected_players, results):
-        u, t = self.utility_computation_call(selected_players[:-1])
-        compute_times = 1
+        u, t, comp_count = self.utility_computation_call(selected_players[:-1])
+        compute_times = comp_count
         if self.if_truncation(u):
             results.put(([int(player_id in selected_players)\
                           for player_id in range(self.player_num)], 
-                         u, 1, t))
+                         u, compute_times, t))
             self.truncation_coaliations.add(
                 ",".join(map(str, sorted(selected_players))))
             return
-        u, t1 = self.utility_computation_call(selected_players)
-        compute_times += 1
+        u, t1, comp_count = self.utility_computation_call(selected_players)
+        compute_times += comp_count
         results.put(([int(player_id in selected_players)\
                       for player_id in range(self.player_num)], 
                      u, compute_times, t+t1))
