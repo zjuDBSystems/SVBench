@@ -9,7 +9,8 @@ from sklearn.datasets import load_iris, load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import Dataset
-
+from ucimlrepo import fetch_ucirepo 
+import openml
 
 class ImageDataset(Dataset):
     def __init__(self, dataset, labels, original_len, idxs, attacker=False,
@@ -47,20 +48,6 @@ class ImageDataset(Dataset):
         else:
             label = true_label
         return data, label, true_label
-
-
-def load_AdultData(file_path):
-    column_names = [
-        "age", "workclass", "fnlwgt", "education", "education_num",
-        "marital_status", "occupation", "relationship", "race", "sex",
-        "capital_gain", "capital_loss", "hours_per_week", "native_country",
-        "income"
-    ]
-    data = pd.read_csv(file_path, names=column_names,
-                       na_values=" ?", skipinitialspace=True)
-    data.head()
-    data = preprocess_AdultData(data)
-    return data
 
 
 def preprocess_AdultData(data):
@@ -118,6 +105,7 @@ def get_datasets(dataset):
             download=True,
             transform=trans_cifar10_val
         )
+    
     elif dataset == 'iris':
         iris = load_iris()
         x = iris.data
@@ -190,6 +178,80 @@ def get_datasets(dataset):
         print('wine test data shape:', x_test.shape)
         print('wine labels:', set(y_train.numpy().tolist()))
 
+    elif dataset == 'wind':
+        X,_,_,_ = openml.datasets.get_dataset(847).get_data(
+            dataset_format='dataframe')
+        x_train, x_test, y_train, y_test = train_test_split(
+            X.iloc[:,0:14].to_numpy(), 
+            [int(l=='P') for l in X['binaryClass']], test_size=0.2)
+        x_train = torch.FloatTensor(x_train)
+        '''
+        # normalize only when the dataset is used for RI tasks
+        shape =  x_train.shape
+        x_train = x_train.reshape((shape[0],-1))
+        min_vals, _ = torch.min(x_train, dim=0, keepdim=True)
+        max_vals, _ = torch.max(x_train, dim=0, keepdim=True)
+        x_train = (x_train - min_vals) / (max_vals - min_vals)
+        x_train = x_train.reshape(shape)
+        '''
+        x_test = torch.FloatTensor(x_test)
+        ''' 
+        # normalize only when the dataset is used for RI tasks
+        shape =  x_test.shape
+        x_test = x_test.reshape((shape[0],-1))
+        min_vals, _ = torch.min(x_test, dim=0, keepdim=True)
+        max_vals, _ = torch.max(x_test, dim=0, keepdim=True)
+        x_test = (x_test - min_vals) / (max_vals - min_vals)
+        x_test = x_test.reshape(shape)
+        '''
+        y_train = torch.LongTensor(y_train)
+        y_test = torch.LongTensor(y_test)
+
+        dataset_train = ImageDataset(x_train, y_train,
+                                     len(x_train), range(len(x_train)))
+        dataset_test = ImageDataset(x_test, y_test,
+                                    len(x_test), range(len(x_test)))
+        # img_size = x_train[0].shape
+        print('wind train data shape:', x_train.shape)
+        print('wind test data shape:', x_test.shape)
+        print('wind labels:', set(y_train.numpy().tolist()))
+        
+    elif dataset == '2dplanes':
+        X,_,_,_ = openml.datasets.get_dataset(727).get_data(
+            dataset_format='dataframe')
+        x_train, x_test, y_train, y_test = train_test_split(
+            X.iloc[:,0:10].to_numpy(), 
+            [int(l=='P') for l in X['binaryClass']], test_size=0.2)
+        x_train = torch.FloatTensor(x_train)
+        # normalize only when the dataset is used for RI tasks
+        shape =  x_train.shape
+        x_train = x_train.reshape((shape[0],-1))
+        min_vals, _ = torch.min(x_train, dim=0, keepdim=True)
+        max_vals, _ = torch.max(x_train, dim=0, keepdim=True)
+        x_train = (x_train - min_vals) / (max_vals - min_vals)
+        x_train = x_train.reshape(shape)
+        
+        x_test = torch.FloatTensor(x_test)
+        # normalize only when the dataset is used for RI tasks
+        shape =  x_test.shape
+        x_test = x_test.reshape((shape[0],-1))
+        min_vals, _ = torch.min(x_test, dim=0, keepdim=True)
+        max_vals, _ = torch.max(x_test, dim=0, keepdim=True)
+        x_test = (x_test - min_vals) / (max_vals - min_vals)
+        x_test = x_test.reshape(shape)
+        
+        y_train = torch.LongTensor(y_train)
+        y_test = torch.LongTensor(y_test)
+
+        dataset_train = ImageDataset(x_train, y_train,
+                                     len(x_train), range(len(x_train)))
+        dataset_test = ImageDataset(x_test, y_test,
+                                    len(x_test), range(len(x_test)))
+        # img_size = x_train[0].shape
+        print('2Dplanes train data shape:', x_train.shape)
+        print('2Dplanes test data shape:', x_test.shape)
+        print('2Dplanes labels:', set(y_train.numpy().tolist()))
+
     else:
         exit('Error: unrecognized dataset')
 
@@ -199,9 +261,7 @@ def get_datasets(dataset):
 def data_split(dataset, num_classes, data_allocation, num_trainDatasets, group_size, multiplier, data_size_group, data_size_mean):
     # load datasets
     dataset_train, dataset_test = get_datasets(dataset)
-    validation_index = []  # np.random.choice(
-    # len(dataset_test),int(len(dataset_test)*0.05), replace=False
-    # )
+    validation_index = []  
 
     # sampling
     if data_allocation == 0 or num_trainDatasets == 1:
@@ -349,6 +409,21 @@ def data_prepare(manual_seed, dataset, num_classes, data_allocation=0, num_train
                  group_size='1', multiplier='1', data_size_group=1, data_size_mean=100.0):
     init_random_seed(manual_seed)
 
+    if dataset == 'adult':
+        adult = fetch_ucirepo(id=2) 
+        data = pd.concat([adult.data.features, adult.data.targets], axis=1)
+        data = data.dropna()#删除缺失值
+        data['income'] = data['income'].str.replace('.', '', regex=False)
+        label_encoders = {}
+        for column in data.select_dtypes(include=['object']).columns:
+            label_encoders[column] = LabelEncoder()
+            data[column] = label_encoders[column].fit_transform(data[column])
+        print("data['income'].unique():", data['income'].unique())
+        X = data.drop('income', axis=1)
+        y = data['income']
+        # Split dataset
+        return train_test_split(X, y, test_size=0.2)
+    
     # load dataset and split workers
     dataset_train, dataset_test, validation_index, dict_workers = data_split(
         dataset, num_classes, data_allocation, num_trainDatasets, group_size, multiplier, data_size_group, data_size_mean)
