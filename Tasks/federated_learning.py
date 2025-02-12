@@ -3,6 +3,7 @@ import copy
 import os
 import time
 import sys
+import pandas as pd
 
 from .utils import DNNTrain, DNNTest, find_free_device
 from .nets import CNNCifar, CNN, RegressionModel
@@ -18,7 +19,8 @@ class FL():
         self.dataset_info = {
             'cifar': (10, 10, 10, 3, 3, 64, 0.1, 1, '5', 1000),
             'mnist': (10, 10, 10, 1, 1, 64, 0.1, 1, '6', 1000),
-            'wind': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', 657)
+            'wind': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', 657),
+            'adult': (2, 10, 10, 1, 1, 0, 0, 0, '1', 1000)
         }
         self.num_classes, self.num_clients, self.max_round,     \
             self.num_channels, self.local_ep, self.local_bs,    \
@@ -27,17 +29,24 @@ class FL():
         self.device = find_free_device()
         self.model = None
 
-        tst_path = 'data/%s1/test.pt' % (dataset)
-        if not os.path.exists(tst_path):
-            data_prepare(manual_seed=manual_seed, dataset=dataset, num_classes=self.num_classes,
-                         data_allocation=1, num_trainDatasets=10, group_size='10',
-                         multiplier=multiplier, data_size_mean=data_size_mean)
+        print("Data preprocessing...")
+        if dataset == 'adult':
+            self.X_train, X_test, self.y_train, y_test = data_prepare(
+                manual_seed=manual_seed, dataset=dataset,num_classes=self.num_classes)
+            self.Tst = pd.concat([X_test, y_test], axis=1)
+            
+        else:
+            tst_path = 'data/%s1/test.pt' % (dataset)
+            if not os.path.exists(tst_path):
+                data_prepare(manual_seed=manual_seed, dataset=dataset, num_classes=self.num_classes,
+                            data_allocation=1, num_trainDatasets=10, group_size='10',
+                            multiplier=multiplier, data_size_mean=data_size_mean)
 
-        self.Tst = torch.load(tst_path)
-        self.stored_gradients = dict()
-        self.skippable_test_sample = [
-            dict([(no, set()) for no in range(self.num_clients)])
-            for ridx in range(self.max_round)]
+            self.Tst = torch.load(tst_path)
+            self.stored_gradients = dict()
+            self.skippable_test_sample = [
+                dict([(no, set()) for no in range(self.num_clients)])
+                for ridx in range(self.max_round)]
 
         # player setting
         self.player_datasets = [
