@@ -5,8 +5,10 @@ shapley.py
 sv_env/
 __pycache__/
 Tasks/__pycache__/
-data/*
 Tasks/utility_records/*
 log.txt
 models/*
 *.log
+logs
+Tasks/test.py
+data

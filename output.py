@@ -124,9 +124,9 @@ class Aggregator():
             # the results printed here are necessary for the final set of experiments
             # for generating the figure of overall utility variance caused by
             # adding or removing players
-            print(('[%s] Player %s: delta_utility: %s, SV_bef: %s, SV_aft: %s.') % (
-                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                player_id, delta_utility, old_SV, self.SV[player_id]))
+            # print(('[%s] Player %s: delta_utility: %s, SV_bef: %s, SV_aft: %s.') % (
+            #     datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            #     player_id, delta_utility, old_SV, self.SV[player_id]))
 
         # update SV_var
         for player_id in range(self.player_num):

@@ -5,7 +5,7 @@ import time
 import sys
 
 from .utils import DNNTrain, DNNTest, find_free_device
-from .nets import CNNCifar, CNN
+from .nets import CNNCifar, CNN, RegressionModel
 from .data_preparation import data_prepare
 
 
@@ -16,12 +16,13 @@ class FL():
         self.dataset = dataset
         self.manual_seed = manual_seed
         self.dataset_info = {
-            'cifar': (10, 10, 10, 3, 3, 64, 0.1, 1, '5'),
-            'mnist': (10, 10, 10, 1, 1, 64, 0.1, 1, '6')
+            'cifar': (10, 10, 10, 3, 3, 64, 0.1, 1, '5', 1000),
+            'mnist': (10, 10, 10, 1, 1, 64, 0.1, 1, '6', 1000),
+            'wind': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', 657)
         }
         self.num_classes, self.num_clients, self.max_round,     \
             self.num_channels, self.local_ep, self.local_bs,    \
-            self.lr, self.decay_rate, multiplier = self.dataset_info[dataset]
+            self.lr, self.decay_rate, multiplier, data_size_mean = self.dataset_info[dataset]
         self.ridx = 0
         self.device = find_free_device()
         self.model = None
@@ -30,7 +31,7 @@ class FL():
         if not os.path.exists(tst_path):
             data_prepare(manual_seed=manual_seed, dataset=dataset, num_classes=self.num_classes,
                          data_allocation=1, num_trainDatasets=10, group_size='10',
-                         multiplier=multiplier, data_size_mean=1000)
+                         multiplier=multiplier, data_size_mean=data_size_mean)
 
         self.Tst = torch.load(tst_path)
         self.stored_gradients = dict()
@@ -157,6 +158,10 @@ class FL():
         elif self.dataset == 'mnist':
             global_model = CNN(num_channels=self.num_channels,
                                num_classes=self.num_classes)
+        elif self.dataset == 'wind':
+            global_model = RegressionModel(
+                num_feature=self.num_channels,
+                num_classes=self.num_classes)
         return global_model
 
     def utility_computation(self, player_idxs):

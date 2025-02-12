@@ -209,6 +209,7 @@ class Shapley():
             self.truncation_coaliations.add(
                 ",".join(map(str, sorted(list(subset)+[player_id]))))
             comp_times = 0
+            time_cost1 = 0
         else:
             # utility after adding the targeted player
             aft_addition, time_cost1, comp_count = self.utility_computation_call(

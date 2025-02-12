@@ -70,6 +70,9 @@ class SVBench():
                 dataset=self.dataset,
                 manual_seed=self.manual_seed,
                 GA=self.GA)
+            # adjust player scale
+            if self.dataset in BENCHMARK[self.task].keys():
+                BENCHMARK[self.task][self.dataset] = len(DV.players)
             return DV.utility_computation
         elif self.task == 'FL':
             FL = federated_learning.FL(

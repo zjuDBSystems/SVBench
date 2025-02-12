@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from torch.utils.data import DataLoader
 from .nets import CNN, RegressionModel, LinearAttackModel, CNNCifar, NN
+from sklearn import metrics
 
 TEST_BS = 128
 
@@ -173,3 +174,18 @@ def DNNTest(model, test_data,
                                 torch.tensor(np.concatenate(targets)))
 
     return utility
+
+
+def AdultTrain(model, X_train, y_train):
+    model.fit(X_train, y_train)
+    return model
+
+
+def AdultTest(model, testData, metric='tst_accuracy'):
+    X_test = testData.iloc[:, :-1]
+    y_test = testData.iloc[:, -1]
+    prediction = model.predict(X_test)
+    if metric == 'tst_accuracy':
+        return metrics.r2_score(y_test, prediction)
+    elif metric == 'prediction':
+        return prediction

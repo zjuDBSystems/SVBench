@@ -17,7 +17,7 @@ def args_parser():
 
     # dataset parameters
     parser.add_argument('--dataset', type=str, default="mnist",
-                        help="{MNIST, Iris}")
+                        help="{mnist, iris, adult}")
 
     # task parameters
     parser.add_argument('--task', type=str, default="DV",
@@ -28,7 +28,7 @@ def args_parser():
                         help="SV cache_size")
     parser.add_argument('--base_algo', type=str, default="MC",
                         help="{MC, RE, MLE, GT, CP}")
-    parser.add_argument('--convergence_threshold', type=float, default=0.05,
+    parser.add_argument('--convergence_threshold', type=float, default=0.0,
                         help="approximation convergence_threshold")
 
     parser.add_argument('--sampling_strategy', type=str, default="random",
@@ -101,7 +101,10 @@ if __name__ == '__main__':
         RI.testSampleFeatureSV_var = dict()
         # compute SV for only selected test samples for saving time cost
         for test_idx in RI.selected_test_samples:
-            RI.Tst.idxs = RI.complete_Tst_idx[test_idx:test_idx+1]
+            if args.dataset == 'adult':
+                RI.Tst = RI.complete_Tst.loc[RI.complete_Tst_idx[test_idx:test_idx+1]]
+            else:
+                RI.Tst.idxs = RI.complete_Tst_idx[test_idx:test_idx+1]
             SV, SV_var = sv_calc(
                 task = f'RI_{args.dataset}_Idx{test_idx}',
                 dataset = args.dataset,
@@ -124,8 +127,7 @@ if __name__ == '__main__':
             RI.testSampleFeatureSV_var[test_idx] = dict([
                 (fidx, np.var(SV_var[fidx]))
                 for fidx in SV_var.keys()])
-            print(f'\n {test_idx} test sample data: ', RI.Tst.dataset[test_idx],
-                  f'\n {test_idx} test sample label: ', RI.Tst.labels[test_idx])
+            # print(f'\n {test_idx} test sample data: ', RI.Tst.iloc[test_idx])
             print('SV of test sample %s/%s: ' % (test_idx, len(RI.selected_test_samples)),
                   RI.testSampleFeatureSV[test_idx], '\n')
             sys.stdout.flush()
