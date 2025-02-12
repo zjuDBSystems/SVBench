@@ -9,6 +9,6 @@ Tasks/utility_records/*
 log.txt
 models/*
 *.log
-logs
+logs/*
 Tasks/test.py
 data
