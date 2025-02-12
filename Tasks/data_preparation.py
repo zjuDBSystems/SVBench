@@ -264,9 +264,9 @@ def get_datasets(dataset):
         # 转换 X 特征
         X = X.applymap(lambda val: feature_mapping[val])
         # 转换 y 目标变量
-        y = y.map(label_mapping)
+        y = y.iloc[:, 0].map(label_mapping)
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), test_size=0.2)
 
         X_train = torch.FloatTensor(X_train)
         # normalize only when the dataset is used for RI tasks
