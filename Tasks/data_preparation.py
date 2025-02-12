@@ -252,6 +252,52 @@ def get_datasets(dataset):
         print('2Dplanes test data shape:', x_test.shape)
         print('2Dplanes labels:', set(y_train.numpy().tolist()))
 
+    elif dataset == 'ttt':
+        tic_tac_toe_endgame = fetch_ucirepo(id=101) 
+        # data (as pandas dataframes) 
+        X = tic_tac_toe_endgame.data.features 
+        y = tic_tac_toe_endgame.data.targets
+
+        # 定义映射规则
+        feature_mapping = {'x': 0, 'o': 1, 'b': 2}
+        label_mapping = {'positive': 1, 'negative': 0}
+        # 转换 X 特征
+        X = X.applymap(lambda val: feature_mapping[val])
+        # 转换 y 目标变量
+        y = y.map(label_mapping)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+        X_train = torch.FloatTensor(X_train)
+        # normalize only when the dataset is used for RI tasks
+        shape =  X_train.shape
+        X_train = X_train.reshape((shape[0],-1))
+        min_vals, _ = torch.min(X_train, dim=0, keepdim=True)
+        max_vals, _ = torch.max(X_train, dim=0, keepdim=True)
+        X_train = (X_train - min_vals) / (max_vals - min_vals)
+        X_train = X_train.reshape(shape)
+        
+        X_test = torch.FloatTensor(X_test)
+        # normalize only when the dataset is used for RI tasks
+        shape =  X_test.shape
+        X_test = X_test.reshape((shape[0],-1))
+        min_vals, _ = torch.min(X_test, dim=0, keepdim=True)
+        max_vals, _ = torch.max(X_test, dim=0, keepdim=True)
+        X_test = (X_test - min_vals) / (max_vals - min_vals)
+        X_test = X_test.reshape(shape)
+        
+        y_train = torch.LongTensor(y_train)
+        y_test = torch.LongTensor(y_test)
+
+        dataset_train = ImageDataset(X_train, y_train,
+                                     len(X_train), range(len(X_train)))
+        dataset_test = ImageDataset(X_test, y_test,
+                                    len(X_test), range(len(X_test)))
+        # img_size = X_train[0].shape
+        print('Tic-Tac-Toe train data shape:', X_train.shape)
+        print('Tic-Tac-Toe test data shape:', X_test.shape)
+        print('Tic-Tac-Toe labels:', set(y_train.numpy().tolist()))
+
     else:
         exit('Error: unrecognized dataset')
 

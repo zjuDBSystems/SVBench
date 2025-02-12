@@ -22,7 +22,8 @@ class RI():
             'iris': (3, 4, 0.01, 50, 16),
             'wine': (3, 13, 0.001, 100, 16),
             'adult': (2, 14, 0.01, 50, 16),
-            '2dplanes': (2, 10, 0.01, 100, 64)
+            '2dplanes': (2, 10, 0.01, 100, 64),
+            'ttt': (2, 9, 0.01, 100, 64)
         }
         self.num_classes, self.num_feature, self.lr, self.ep, self.bs = self.dataset_info[
             dataset]
