@@ -27,13 +27,19 @@ def MIA_logRead(SV_args):
     queryValue_ref = dict()
     querySampleExcludeList = dict()
     replace_list = ['_recovery',
+                    '_withDP%s' % SV_args.privacy_protection_level,
                     'withDP%s' % SV_args.privacy_protection_level,
+                    '_withQT%s' % SV_args.privacy_protection_level,
                     'withQT%s' % SV_args.privacy_protection_level,
-                    'withDR%s' % SV_args.privacy_protection_level]
+                    '_withDR%s' % SV_args.privacy_protection_level,
+                    'withDR%s' % SV_args.privacy_protection_level,
+                    ]
     log_file = SV_args.log_file
     for replace_str in replace_list:
         log_file = log_file.replace(replace_str, "")
-    if os.path.exists(log_file):
+    print("file target to read:", log_file)
+    if os.path.exists(log_file) and log_file!='std':
+        print(f'reading {log_file}...')
         with open(log_file, 'r') as file:
             lines = file.readlines()
             queryLabel = dict()
@@ -299,14 +305,17 @@ def MIA(maxIter, num_querySample, SV_args):
         querySampleExcludeList = MIA_logRead(SV_args)
 
     DV = data_valuation.DV(
-        dataset=SV_args.dataset,
-        manual_seed=SV_args.manual_seed,
-        GA='GA' in SV_args.optimization_strategy)
-    num_classes = len(np.unique([item[1] for item in DV.trn_data]))
-    
+        dataset = SV_args.dataset,
+        manual_seed = SV_args.manual_seed,
+        GA='GA' in SV_args.optimization_strategy
+        )
+    DV.players.idxs = range(len(DV.players.dataset))
     dataIdx = list(DV.players.idxs)
+    num_classes = len(np.unique([item[1] for item in DV.trn_data]))
+    if SV_args.num_samples_each_class * num_classes < num_querySample:
+        SV_args.num_samples_each_class = int(np.ceil(num_querySample/num_classes))
     inMemberDataset_Size = SV_args.num_samples_each_class * \
-        num_classes  # 3*num_classes
+        num_classes # 3*num_classes
     if len(inMemberDataset) <= 0:
         QueryDataset = np.random.choice(
             dataIdx, num_querySample, replace=False).tolist()
@@ -316,12 +325,12 @@ def MIA(maxIter, num_querySample, SV_args):
         if len(inMemberDataset) < inMemberDataset_Size:
             inMemberDataset += sampleDataset(
                 shadowDataset, DV.trn_data.labels[shadowDataset],
-                int(inMemberDataset_Size / num_classes),
+                round(inMemberDataset_Size / num_classes),
                 query_label=[DV.trn_data.labels[z] for z in inMemberDataset]
             )
-        print('shadowDataset: ', shadowDataset)
-        print('QueryDataset: ', QueryDataset)
-        print('inMemberDataset: ', inMemberDataset)
+    print('shadowDataset: ', shadowDataset)
+    print('QueryDataset: ', QueryDataset)
+    print('inMemberDataset: ', inMemberDataset)
 
     if len(QueryDataset) > 10:
         shadowDataset += QueryDataset[10:]
@@ -330,17 +339,14 @@ def MIA(maxIter, num_querySample, SV_args):
     queryResults = []
     queryLabels = []
     sortChange = []
-    numSamples_in_Shadow = (inMemberDataset_Size/num_classes-1) *num_classes
-
+    numSamples_in_Shadow = inMemberDataset_Size
+    
     for qidx, z in enumerate(QueryDataset):
 
         SV_in = querySampleSVin[qidx] if qidx in querySampleSVin.keys() else []
-        SV_in_ref = querySampleSVin_ref[qidx] if qidx in querySampleSVin_ref.keys() else [
-        ]
-        SV_out = querySampleSVout[qidx] if qidx in querySampleSVout.keys() else [
-        ]
-        SV_out_ref = querySampleSVout_ref[qidx] if qidx in querySampleSVout_ref.keys() else [
-        ]
+        SV_in_ref = querySampleSVin_ref[qidx] if qidx in querySampleSVin_ref.keys() else []
+        SV_out = querySampleSVout[qidx] if qidx in querySampleSVout.keys() else []
+        SV_out_ref = querySampleSVout_ref[qidx] if qidx in querySampleSVout_ref.keys() else []
         sampledShadowDataset = sampleDataset(
             shadowDataset, DV.trn_data.labels[shadowDataset],
             int(numSamples_in_Shadow/num_classes),
@@ -362,6 +368,7 @@ def MIA(maxIter, num_querySample, SV_args):
                 )
                 if time.time()-sampleTime > 3*60:
                     print('【Warning】 sample timeout!!!')
+            print(f'sampling results for sample {z}: ', sampledShadowDataset)
             if ",".join(map(str, sorted(sampledShadowDataset))) in exclude_list:
                 print('Query sample %s/%s Iter %s/%s: SV_out %s, SV_in: %s' % (
                     qidx, len(QueryDataset), iter_, maxIter,
@@ -373,11 +380,14 @@ def MIA(maxIter, num_querySample, SV_args):
             value, ref = SV_compute(DV, z, sampledShadowDataset, SV_args)
             SV_out.append(value)
             SV_out_ref.append(ref)
-            sampledShadowDataset.append(z)
+            replaced_item = sampledShadowDataset[-1]
+            sampledShadowDataset[-1] = z
+            #sampledShadowDataset.append(z)
             value, ref = SV_compute(DV, z, sampledShadowDataset, SV_args)
             SV_in.append(value)
             SV_in_ref.append(ref)
-            sampledShadowDataset = sampledShadowDataset[:-1]
+            #sampledShadowDataset = sampledShadowDataset[:-1]
+            sampledShadowDataset[-1] = replaced_item           
             print('Query sample %s/%s Iter %s/%s: SV_out %s, SV_in: %s' % (
                 qidx, len(QueryDataset), iter_, maxIter,
                 SV_out[-1], SV_in[-1]))
@@ -435,9 +445,13 @@ def MIA(maxIter, num_querySample, SV_args):
 
 def FIA_logRead(SV_args):
     replace_list = ['_recovery',
+                    '_withDP%s' % SV_args.privacy_protection_level,
                     'withDP%s' % SV_args.privacy_protection_level,
+                    '_withQT%s' % SV_args.privacy_protection_level,
                     'withQT%s' % SV_args.privacy_protection_level,
-                    'withDR%s' % SV_args.privacy_protection_level]
+                    '_withDR%s' % SV_args.privacy_protection_level,
+                    'withDR%s' % SV_args.privacy_protection_level,
+                    ]
     log_file = SV_args.log_file
     for replace_str in replace_list:
         log_file = log_file.replace(replace_str, "")
@@ -454,7 +468,8 @@ def FIA_logRead(SV_args):
     # change convergence diff here
     convergence_threshold = SV_args.convergence_threshold
     converge = False
-    if os.path.exists(log_file):
+    print("file target to read:", log_file)
+    if os.path.exists(log_file) and log_file!='std':
         with open(log_file, 'r') as file:
             lines = list(file.readlines())
             for no, line in enumerate(lines):
@@ -537,7 +552,8 @@ def FIA(SV_args):
     RI = result_interpretation.RI(
         dataset=SV_args.dataset,
         manual_seed=SV_args.manual_seed)
-
+    RI.selected_test_samples = range(len(RI.Tst))
+    
     auxiliary_index = np.random.choice(range(len(RI.Tst)),
                                        int(len(RI.Tst)/2),
                                        replace=False).tolist()
@@ -609,9 +625,9 @@ def FIA(SV_args):
                            epoch=100, batch_size=10, lr=0.005,
                            loss_func=torch.nn.L1Loss(),
                            momentum=0, weight_decay=0, max_norm=0,
-                           validation_metric='tst_MAE', loss_print=True)
+                           validation_metric='tst_MAE')
 
-    MAE = DNNTest(attackModel, validation_data, test_bs=128, metric='tst_MAE',
+    MAE = DNNTest(attackModel, validation_data, metric='tst_MAE',
                   pred_print=True)  # mean absolute error
     print('FIA MAE: ', MAE)
     return MAE
@@ -625,7 +641,8 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
     RI = result_interpretation.RI(
         dataset=SV_args.dataset,
         manual_seed=SV_args.manual_seed)
-
+    RI.selected_test_samples = range(len(RI.Tst))
+    
     randomTestData, auxiliary_index, \
         testSampleFeatureSV, testSampleFeatureSV_ref = FIA_logRead(SV_args)
     if len(auxiliary_index) <= 0:
@@ -771,7 +788,7 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
 
 if __name__ == '__main__':
     args = args_parser()
-    if args.log_file != '':
+    if args.log_file != 'std':
         old_stdout = sys.stdout
         file = open(args.log_file, 'w')
         sys.stdout = file

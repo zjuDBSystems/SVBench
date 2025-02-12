@@ -43,7 +43,14 @@ def args_parser():
                         help="{None, DP, QT, DR}")
     parser.add_argument('--privacy_protection_level', type=float, default=0.0,
                         help="privacy_protection_level")
-
+    
+    # attack parameters
+    parser.add_argument('--attack', type=str, default=None, 
+                        help="{MIA,FIA}")
+    parser.add_argument('--maxIter_in_MIA', type=int, default=32)
+    parser.add_argument('--num_querySample_in_MIA', type=int, default=8)
+    parser.add_argument('--num_samples_each_class', type=int, default=3)
+    
     args = parser.parse_args()
     return args
 
@@ -127,7 +134,9 @@ if __name__ == '__main__':
             RI.testSampleFeatureSV_var[test_idx] = dict([
                 (fidx, np.var(SV_var[fidx]))
                 for fidx in SV_var.keys()])
-            # print(f'\n {test_idx} test sample data: ', RI.Tst.iloc[test_idx])
+            if args.dataset != 'adult':
+                print(f'\n {test_idx} test sample data: ', RI.Tst.dataset[test_idx], 
+                      f'\n {test_idx} test sample label: ', RI.Tst.labels[test_idx])
             print('SV of test sample %s/%s: ' % (test_idx, len(RI.selected_test_samples)),
                   RI.testSampleFeatureSV[test_idx], '\n')
             sys.stdout.flush()
