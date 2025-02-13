@@ -21,8 +21,8 @@ BENCHMARK = {
         '2dplanes':(10)
     },
     'DSV': {
-        'iris': (10),
-        'wine': (10),
+        'mnist': (10),
+        'cifar': (10),
         '2dplanes':(10)
     }
 }

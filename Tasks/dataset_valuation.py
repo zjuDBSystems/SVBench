@@ -4,7 +4,7 @@ import random
 import os
 
 from .data_preparation import data_prepare
-from .nets import RegressionModel, NN
+from .nets import RegressionModel, NN, CNNCifar, CNN
 from .utils import DNNTrain, DNNTest
 
 
@@ -12,11 +12,14 @@ class DSV():
     def __init__(self, dataset, manual_seed, GA):
         self.GA = GA
         self.dataset_info = {
-            'iris': (3, 4, 50, 16, 0.01, 12),
-            'wine': (3, 13, 100, 16, 0.001, 15)
+            #'iris': (3, 4, 50, 16, 0.01, 12),
+            #'wine': (3, 13, 100, 16, 0.001, 15),
+            'mnist': (10, 1, 1, 128, 0.1, 6000),
+            'cifar': (10, 3, 1, 128, 0.1, 5000),
+            '2dplanes': (2, 10, 100, 64, 0.01, 3261)
         }
-        self.num_classes, self.num_feature, self.ep, self.bs, self.lr, self.tuple_to_set  \
-            = self.dataset_info[dataset]
+        self.num_classes, self.num_feature, self.ep, \
+            self.bs, self.lr, self.tuple_to_set  = self.dataset_info[dataset]
 
         self.model = None
         self.dataset = dataset
@@ -36,8 +39,13 @@ class DSV():
             start_idx: min(len(self.trn_data),
                            start_idx+self.tuple_to_set)]
                         for start_idx in range(0, len(self.trn_data),
-                                               self.tuple_to_set)]
-
+                                           self.tuple_to_set)]
+        '''
+        if self.dataset == ('mnist' or 'cifar'):
+            for player_idx, dataIdxs in enumerate(self.players):
+                self.players[player_idx] = np.random.choice(dataIdxs, 512,
+                                                            replace = False)
+        '''        
         self.Tst = torch.load('data/%s0/test.pt' % (dataset))
 
     def utility_computation(self, player_list):
@@ -52,14 +60,19 @@ class DSV():
                 len(player_list) <= 0:
             if self.GA:
                 print('model initialize...')
-            if self.dataset == 'iris':
-                self.model = RegressionModel(
-                    num_feature=self.num_feature,
-                    num_classes=self.num_classes)
+            if self.dataset == 'cifar':
+                self.model = CNNCifar(
+                    num_channels=self.num_feature, num_classes=self.num_classes)
+            elif self.dataset == 'mnist':
+                self.model = CNN(num_channels=self.num_feature,
+                                   num_classes=self.num_classes)
             elif self.dataset == 'wine':
                 self.model = NN(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
-
+            else:
+                self.model = RegressionModel(
+                    num_feature=self.num_feature,
+                    num_classes=self.num_classes)
         if len(player_list) <= 0:
             utility = DNNTest(self.model, self.Tst,
                               metric='tst_accuracy')

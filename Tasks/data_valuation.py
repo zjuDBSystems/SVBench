@@ -12,7 +12,7 @@ class DV():
     def __init__(self, dataset, manual_seed, GA):
         self.GA = GA
         self.dataset_info = {
-            'iris': (3, 4, 50, 16, 0.01),
+            'iris': (3, 4, 100, 16, 0.05),
             'wine': (3, 13, 100, 16, 0.001),
             'wind': (2, 14, 100, 16, 0.01)
         }
@@ -27,11 +27,10 @@ class DV():
             data_prepare(manual_seed=manual_seed,
                          dataset=dataset,
                          num_classes=self.num_classes)
-
+        
         # player setting
         self.Tst = torch.load('data/%s0/test.pt' % (dataset))
         self.trn_data = torch.load(trn_path)
-
         # adjust the scale of players in order to generate exact SV with limited computing budgets
         if len(self.trn_data)<15:
             pass
@@ -104,7 +103,6 @@ class DV():
                 self.model = RegressionModel(
                     num_feature=self.num_feature,
                     num_classes=self.num_classes)
-
         if len(player_list) <= 0:
             utility = DNNTest(self.model, self.Tst,
                               metric='tst_accuracy')

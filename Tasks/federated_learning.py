@@ -3,7 +3,6 @@ import copy
 import os
 import time
 import sys
-import pandas as pd
 
 from .utils import DNNTrain, DNNTest, find_free_device
 from .nets import CNNCifar, CNN, RegressionModel
@@ -29,24 +28,17 @@ class FL():
         self.device = find_free_device()
         self.model = None
 
-        print("Data preprocessing...")
-        if dataset == 'adult':
-            self.X_train, X_test, self.y_train, y_test = data_prepare(
-                manual_seed=manual_seed, dataset=dataset,num_classes=self.num_classes)
-            self.Tst = pd.concat([X_test, y_test], axis=1)
-            
-        else:
-            tst_path = 'data/%s1/test.pt' % (dataset)
-            if not os.path.exists(tst_path):
-                data_prepare(manual_seed=manual_seed, dataset=dataset, num_classes=self.num_classes,
-                            data_allocation=1, num_trainDatasets=10, group_size='10',
-                            multiplier=multiplier, data_size_mean=data_size_mean)
+        tst_path = 'data/%s1/test.pt' % (dataset)
+        if not os.path.exists(tst_path):
+            data_prepare(manual_seed=manual_seed, dataset=dataset, num_classes=self.num_classes,
+                         data_allocation=1, num_trainDatasets=10, group_size='10',
+                         multiplier=multiplier, data_size_mean=data_size_mean)
 
-            self.Tst = torch.load(tst_path)
-            self.stored_gradients = dict()
-            self.skippable_test_sample = [
-                dict([(no, set()) for no in range(self.num_clients)])
-                for ridx in range(self.max_round)]
+        self.Tst = torch.load(tst_path)
+        self.stored_gradients = dict()
+        self.skippable_test_sample = [
+            dict([(no, set()) for no in range(self.num_clients)])
+            for ridx in range(self.max_round)]
 
         # player setting
         self.player_datasets = [
@@ -142,7 +134,8 @@ class FL():
                 # aggregation
                 agg_results = self.weighted_avg(localUpdates, p_k)
                 global_model.load_state_dict(agg_results)
-                print(f'Round {ridx} time cost: {time.time()-start_time}')
+                print(f'Round {ridx} time cost: {time.time()-start_time}'+\
+                      ' global model performance: ',DNNTest(global_model, self.Tst))
         #print('skippable_test_sample: ', self.skippable_test_sample)
         
         
