@@ -95,7 +95,7 @@ class Aggregator():
             self.A_CP = 1 / np.sqrt(self.num_measurement) * \
                 (2 * np.random.binomial(
                     1, 0.5, size=(self.num_measurement, self.player_num)) - 1)
-            self.CP_epsilon = 0.00001
+            self.CP_epsilon = 0.005
 
     def aggregate(self, results, task_total_utility, task_emptySet_utility):
         if self.algo == 'MC':

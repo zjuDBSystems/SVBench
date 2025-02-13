@@ -23,7 +23,7 @@ class RI():
             'wine': (3, 13, 0.001, 100, 16),
             'adult': (2, 14, 0.01, 100, 64),
             '2dplanes': (2, 10, 0.01, 100, 64),
-            'ttt': (2, 9, 0.01, 100, 64)
+            'ttt': (2, 9, 0.001, 50, 16)
         }
         self.num_classes, self.num_feature, self.lr, self.ep, self.bs = self.dataset_info[
             dataset]
@@ -175,7 +175,7 @@ class RI():
                 )
             return
 
-        if self.dataset in ['wine', 'adult']:
+        if self.dataset in ['wine', 'adult', 'ttt']:
             self.model = NN(num_feature=self.num_feature,
                             num_classes=self.num_classes)
         # elif self.dataset == 'adult':
