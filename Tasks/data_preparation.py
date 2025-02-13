@@ -298,6 +298,51 @@ def get_datasets(dataset):
         print('Tic-Tac-Toe test data shape:', X_test.shape)
         print('Tic-Tac-Toe labels:', set(y_train.numpy().tolist()))
 
+    elif dataset == 'adult':
+        adult = fetch_ucirepo(id=2) 
+        data = pd.concat([adult.data.features, adult.data.targets], axis=1)
+        data = data.dropna()    # 删除缺失值
+        data['income'] = data['income'].str.replace('.', '', regex=False)
+        label_encoders = {}
+        for column in data.select_dtypes(include=['object']).columns:
+            label_encoders[column] = LabelEncoder()
+            data[column] = label_encoders[column].fit_transform(data[column])
+        print("data['income'].unique():", data['income'].unique())
+        X = data.drop('income', axis=1)
+        y = data['income']
+
+        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), test_size=0.2)
+
+        X_train = torch.FloatTensor(X_train)
+        # normalize only when the dataset is used for RI tasks
+        shape =  X_train.shape
+        X_train = X_train.reshape((shape[0],-1))
+        min_vals, _ = torch.min(X_train, dim=0, keepdim=True)
+        max_vals, _ = torch.max(X_train, dim=0, keepdim=True)
+        X_train = (X_train - min_vals) / (max_vals - min_vals)
+        X_train = X_train.reshape(shape)
+        
+        X_test = torch.FloatTensor(X_test)
+        # normalize only when the dataset is used for RI tasks
+        shape =  X_test.shape
+        X_test = X_test.reshape((shape[0],-1))
+        min_vals, _ = torch.min(X_test, dim=0, keepdim=True)
+        max_vals, _ = torch.max(X_test, dim=0, keepdim=True)
+        X_test = (X_test - min_vals) / (max_vals - min_vals)
+        X_test = X_test.reshape(shape)
+        
+        y_train = torch.LongTensor(y_train)
+        y_test = torch.LongTensor(y_test)
+
+        dataset_train = ImageDataset(X_train, y_train,
+                                     len(X_train), range(len(X_train)))
+        dataset_test = ImageDataset(X_test, y_test,
+                                    len(X_test), range(len(X_test)))
+        # img_size = X_train[0].shape
+        print('Adult train data shape:', X_train.shape)
+        print('Adult test data shape:', X_test.shape)
+        print('Adult labels:', set(y_train.numpy().tolist()))
+
     else:
         exit('Error: unrecognized dataset')
 
@@ -455,20 +500,20 @@ def data_prepare(manual_seed, dataset, num_classes, data_allocation=0, num_train
                  group_size='1', multiplier='1', data_size_group=1, data_size_mean=100.0):
     init_random_seed(manual_seed)
 
-    if dataset == 'adult':
-        adult = fetch_ucirepo(id=2) 
-        data = pd.concat([adult.data.features, adult.data.targets], axis=1)
-        data = data.dropna()#删除缺失值
-        data['income'] = data['income'].str.replace('.', '', regex=False)
-        label_encoders = {}
-        for column in data.select_dtypes(include=['object']).columns:
-            label_encoders[column] = LabelEncoder()
-            data[column] = label_encoders[column].fit_transform(data[column])
-        print("data['income'].unique():", data['income'].unique())
-        X = data.drop('income', axis=1)
-        y = data['income']
-        # Split dataset
-        return train_test_split(X, y, test_size=0.2)
+    # if dataset == 'adult':
+    #     adult = fetch_ucirepo(id=2) 
+    #     data = pd.concat([adult.data.features, adult.data.targets], axis=1)
+    #     data = data.dropna()#删除缺失值
+    #     data['income'] = data['income'].str.replace('.', '', regex=False)
+    #     label_encoders = {}
+    #     for column in data.select_dtypes(include=['object']).columns:
+    #         label_encoders[column] = LabelEncoder()
+    #         data[column] = label_encoders[column].fit_transform(data[column])
+    #     print("data['income'].unique():", data['income'].unique())
+    #     X = data.drop('income', axis=1)
+    #     y = data['income']
+    #     # Split dataset
+    #     return train_test_split(X, y, test_size=0.2)
     
     # load dataset and split workers
     dataset_train, dataset_test, validation_index, dict_workers = data_split(

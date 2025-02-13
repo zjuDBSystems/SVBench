@@ -108,10 +108,10 @@ if __name__ == '__main__':
         RI.testSampleFeatureSV_var = dict()
         # compute SV for only selected test samples for saving time cost
         for test_idx in RI.selected_test_samples:
-            if args.dataset == 'adult':
-                RI.Tst = RI.complete_Tst.loc[RI.complete_Tst_idx[test_idx:test_idx+1]]
-            else:
-                RI.Tst.idxs = RI.complete_Tst_idx[test_idx:test_idx+1]
+            # if args.dataset == 'adult':
+            #     RI.Tst = RI.complete_Tst.loc[RI.complete_Tst_idx[test_idx:test_idx+1]]
+            # else:
+            RI.Tst.idxs = RI.complete_Tst_idx[test_idx:test_idx+1]
             SV, SV_var = sv_calc(
                 task = f'RI_{args.dataset}_Idx{test_idx}',
                 dataset = args.dataset,
