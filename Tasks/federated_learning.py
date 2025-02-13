@@ -5,7 +5,7 @@ import time
 import sys
 
 from .utils import DNNTrain, DNNTest, find_free_device
-from .nets import CNNCifar, CNN, RegressionModel
+from .nets import CNNCifar, CNN, RegressionModel, NN
 from .data_preparation import data_prepare
 
 
@@ -19,7 +19,7 @@ class FL():
             'cifar': (10, 10, 10, 3, 3, 64, 0.1, 1, '5', 1000),
             'mnist': (10, 10, 10, 1, 1, 64, 0.1, 1, '6', 1000),
             'wind': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', 657),
-            'adult': (2, 10, 10, 1, 1, 0, 0, 0, '1', 1000)
+            'adult': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', int(48842/10))
         }
         self.num_classes, self.num_clients, self.max_round,     \
             self.num_channels, self.local_ep, self.local_bs,    \
@@ -164,6 +164,9 @@ class FL():
             global_model = RegressionModel(
                 num_feature=self.num_channels,
                 num_classes=self.num_classes)
+        elif self.dataset == 'adult':
+            global_model = NN(num_feature=self.num_channels,
+                            num_classes=self.num_classes)
         return global_model
 
     def utility_computation(self, player_idxs):
