@@ -7,10 +7,11 @@ import numpy as np
 from torchvision import datasets, transforms
 from sklearn.datasets import load_iris, load_wine
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from torch.utils.data import Dataset
 from ucimlrepo import fetch_ucirepo 
 import openml
+from sklearn.decomposition import PCA
 
 class ImageDataset(Dataset):
     def __init__(self, dataset, labels, original_len, idxs, attacker=False,
@@ -342,6 +343,60 @@ def get_datasets(dataset):
         print('Adult train data shape:', X_train.shape)
         print('Adult test data shape:', X_test.shape)
         print('Adult labels:', set(y_train.numpy().tolist()))
+
+    elif dataset == 'dota':
+        dota = fetch_ucirepo(id=367) 
+        data = pd.concat([dota.data.features, dota.data.targets], axis=1)
+        # print("data['win'].unique():", data['win'].unique())
+        # print("data['hero1'].unique():", data['hero1'].unique())
+        # print(data.columns.tolist())
+        data['win'] = data['win'].replace(-1, 0)
+        y = data['win']
+        data = pd.get_dummies(data, columns=['gamemode', 'gametype'])
+        for i in range(1, 114, 1):
+            data['hero' + str(i)] = data['hero' + str(i)].replace(0, 0.5).replace(-1, 0)
+        pca = PCA(n_components=50)  # 降到 50 个主成分
+        X_pca = pca.fit_transform(data.drop(columns=['win']))  # 删除目标变量
+
+        # 将 PCA 转换后的数据转回 DataFrame 格式
+        data = pd.DataFrame(X_pca, columns=[f'PC{i+1}' for i in range(50)])
+        scaler = MinMaxScaler(feature_range=(0, 1))  # 归一化到 [0,1] 区间
+        data = scaler.fit_transform(data)
+        print(data)
+        X = data
+        # exit()
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y.to_numpy(), test_size=0.2)
+
+        X_train = torch.FloatTensor(X_train)
+        # normalize only when the dataset is used for RI tasks
+        shape =  X_train.shape
+        X_train = X_train.reshape((shape[0],-1))
+        min_vals, _ = torch.min(X_train, dim=0, keepdim=True)
+        max_vals, _ = torch.max(X_train, dim=0, keepdim=True)
+        X_train = (X_train - min_vals) / (max_vals - min_vals)
+        X_train = X_train.reshape(shape)
+        
+        X_test = torch.FloatTensor(X_test)
+        # normalize only when the dataset is used for RI tasks
+        shape =  X_test.shape
+        X_test = X_test.reshape((shape[0],-1))
+        min_vals, _ = torch.min(X_test, dim=0, keepdim=True)
+        max_vals, _ = torch.max(X_test, dim=0, keepdim=True)
+        X_test = (X_test - min_vals) / (max_vals - min_vals)
+        X_test = X_test.reshape(shape)
+        
+        y_train = torch.LongTensor(y_train)
+        y_test = torch.LongTensor(y_test)
+
+        dataset_train = ImageDataset(X_train, y_train,
+                                     len(X_train), range(len(X_train)))
+        dataset_test = ImageDataset(X_test, y_test,
+                                    len(X_test), range(len(X_test)))
+        # img_size = X_train[0].shape
+        print('Dota2 train data shape:', X_train.shape)
+        print('Dota2 test data shape:', X_test.shape)
+        print('Dota2 labels:', set(y_train.numpy().tolist()))
 
     else:
         exit('Error: unrecognized dataset')
