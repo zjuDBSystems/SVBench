@@ -12,7 +12,8 @@ BENCHMARK = {
     'FL': {
         'cifar': (10),
         'mnist': (10),
-        'wind': (10)
+        'wind': (10),
+        'adult': (10)
     },
     'RI': {
         'iris': (4),
