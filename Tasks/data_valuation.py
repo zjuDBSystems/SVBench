@@ -14,7 +14,8 @@ class DV():
         self.dataset_info = {
             'iris': (3, 4, 100, 16, 0.05),
             'wine': (3, 13, 100, 16, 0.001),
-            'wind': (2, 14, 100, 16, 0.01)
+            'wind': (2, 14, 100, 16, 0.01),
+            'ttt': (2, 9, 100, 16, 0.01)
         }
         self.num_classes, self.num_feature, self.ep, self.bs, self.lr  \
             = self.dataset_info[dataset]
@@ -40,7 +41,7 @@ class DV():
             for l in unique_labels:
                 label_count[l]=list(self.trn_data.labels).count(l)
             
-            if self.dataset == 'wine':
+            if self.dataset in ['wine', 'ttt']:
                 self.model = NN(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
             else:
@@ -96,7 +97,7 @@ class DV():
                 len(player_list) <= 0:
             if self.GA:
                 print('model initialize...')
-            if self.dataset == 'wine':
+            if self.dataset in ['wine', 'ttt']:
                 self.model = NN(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
             else:

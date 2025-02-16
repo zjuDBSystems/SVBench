@@ -7,13 +7,15 @@ BENCHMARK = {
     'DV': {
         'iris': (120),
         'wine': (142),
-        'wind': (5259)
+        'wind': (5259),
+        'ttt': (766)
     },
     'FL': {
         'cifar': (10),
         'mnist': (10),
         'wind': (10),
-        'adult': (10)
+        'adult': (10),
+        'dota': (10)
     },
     'RI': {
         'iris': (4),
