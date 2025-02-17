@@ -17,7 +17,7 @@ def args_parser():
 
     # dataset parameters
     parser.add_argument('--dataset', type=str, default="mnist",
-                        help="{mnist, iris, adult}")
+                        help="{MNIST, Iris}")
 
     # task parameters
     parser.add_argument('--task', type=str, default="DV",
@@ -30,7 +30,9 @@ def args_parser():
                         help="{MC, RE, MLE, GT, CP}")
     parser.add_argument('--convergence_threshold', type=float, default=0.001,
                         help="approximation convergence_threshold")
-
+    parser.add_argument('--checker_mode', type=str, default='SV_var',
+                        help="checker_mode: SV_var or comp_count")
+    
     parser.add_argument('--sampling_strategy', type=str, default="random",
                         help="{random, antithetic, stratified}")
     parser.add_argument('--optimization_strategy', type=str, default='',
@@ -81,6 +83,7 @@ if __name__ == '__main__':
                 base_algo = args.base_algo,
                 conv_check_num = args.conv_check_num,
                 convergence_threshold = args.convergence_threshold,
+                checker_mode = args.checker_mode,
                 sampling_strategy = args.sampling_strategy,
                 optimization_strategy = args.optimization_strategy,
                 TC_threshold = args.TC_threshold,
@@ -108,9 +111,6 @@ if __name__ == '__main__':
         RI.testSampleFeatureSV_var = dict()
         # compute SV for only selected test samples for saving time cost
         for test_idx in RI.selected_test_samples:
-            # if args.dataset == 'adult':
-            #     RI.Tst = RI.complete_Tst.loc[RI.complete_Tst_idx[test_idx:test_idx+1]]
-            # else:
             RI.Tst.idxs = RI.complete_Tst_idx[test_idx:test_idx+1]
             SV, SV_var = sv_calc(
                 task = f'RI_{args.dataset}_Idx{test_idx}',
@@ -120,6 +120,7 @@ if __name__ == '__main__':
                 base_algo = args.base_algo,
                 conv_check_num = args.conv_check_num,
                 convergence_threshold = args.convergence_threshold,
+                checker_mode = args.checker_mode,
                 sampling_strategy = args.sampling_strategy,
                 optimization_strategy = args.optimization_strategy,
                 TC_threshold = args.TC_threshold,
@@ -151,6 +152,7 @@ if __name__ == '__main__':
                 base_algo = args.base_algo,
                 conv_check_num = args.conv_check_num,
                 convergence_threshold = args.convergence_threshold,
+                checker_mode = args.checker_mode,
                 sampling_strategy = args.sampling_strategy,
                 optimization_strategy = args.optimization_strategy,
                 TC_threshold = args.TC_threshold,

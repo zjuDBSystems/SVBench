@@ -44,6 +44,7 @@ def para_set(args):
              'base_algo': 'MC',
              'sampling_strategy': 'random',
              'convergence_threshold': 0.05,
+             'checker_mode':'SV_var', # or comp_count
              'num_parallel_threads': 1,
              'manual_seed': 42,
              'privacy_protection_measure': None,

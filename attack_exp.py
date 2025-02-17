@@ -247,10 +247,10 @@ def SV_compute(DV_task, sampleIdx, datasetIdx, SV_args):
     DV_task.players.idxs = datasetIdx + [sampleIdx]
     print('trn data idxs:', DV_task.players.idxs)
     sys.stdout.flush()
-
+    
     # using SVBench to compute SV
     SV, SV_var = sv_calc(
-        task = f'DV_{SV_args.dataset}',
+        task = 'DV{'+ str(hash(str(DV_task.players.idxs))) +'}',
         dataset = SV_args.dataset,
         player_num  =  len(DV_task.players.idxs),
         utility_function  =  DV_task.utility_computation,
@@ -349,8 +349,7 @@ def MIA(maxIter, num_querySample, SV_args):
         SV_out_ref = querySampleSVout_ref[qidx] if qidx in querySampleSVout_ref.keys() else []
         sampledShadowDataset = sampleDataset(
             shadowDataset, DV.trn_data.labels[shadowDataset],
-            int(numSamples_in_Shadow/num_classes),
-            query_label=[DV.trn_data.labels[z]]
+            int(numSamples_in_Shadow/num_classes)
         )
         exclude_list = (querySampleExcludeList[qidx]
                         if qidx in querySampleExcludeList.keys() else [])
@@ -363,8 +362,7 @@ def MIA(maxIter, num_querySample, SV_args):
             while ",".join(map(str, sorted(sampledShadowDataset))) in exclude_list:
                 sampledShadowDataset = sampleDataset(
                     shadowDataset, DV.trn_data.labels[shadowDataset],
-                    int(numSamples_in_Shadow/num_classes),
-                    query_label=[DV.trn_data.labels[z]]
+                    int(numSamples_in_Shadow/num_classes)
                 )
                 if time.time()-sampleTime > 3*60:
                     print('【Warning】 sample timeout!!!')
@@ -413,20 +411,23 @@ def MIA(maxIter, num_querySample, SV_args):
         out_mean = np.mean(SV_out)
         in_std = np.std(SV_in)
         if in_std == 0:
-            in_std = 10**(-20)
+            in_std = (max(SV_in)-min(SV_in))/3 #10**(-20)
         out_std = np.std(SV_out)
         if out_std == 0:
-            out_std = 10**(-20)
+            out_std = (max(SV_out)-min(SV_out))/3 #10**(-20)
 
-        in_probability = norm.pdf(value, loc=in_mean, scale=in_std)
-        out_probability = norm.pdf(value, loc=out_mean, scale=out_std)
+        in_probability = norm.pdf(value, loc=in_mean, 
+                                  scale=(10**(-20) if in_std==0 else in_std))
+        out_probability = norm.pdf(value, loc=out_mean, 
+                                   scale=(10**(-20) if out_std==0 else out_std))
         if out_probability == 0:
             out_probability = 10**(-20)
         queryResults.append(in_probability/out_probability)
         queryLabels.append(int(z in inMemberDataset))
         print('Query sample %s/%s result: ' % (qidx, len(QueryDataset)),
               value, queryLabels[-1], queryResults[-1],
-              in_probability, out_probability)
+              '\n in inform: ', in_probability, in_mean, in_std,
+              '\n out inform: ', out_probability, out_mean, out_std)
 
     print('queryLabels:', queryLabels, '\n'
           'queryResults:', queryResults,
@@ -552,12 +553,16 @@ def FIA(SV_args):
     RI = result_interpretation.RI(
         dataset=SV_args.dataset,
         manual_seed=SV_args.manual_seed)
-    RI.selected_test_samples = range(len(RI.Tst))
     
     auxiliary_index = np.random.choice(range(len(RI.Tst)),
                                        int(len(RI.Tst)/2),
                                        replace=False).tolist()
+    auxiliary_index = auxiliary_index[:50]
     validation_index = list(set(range(len(RI.Tst)))-set(auxiliary_index))
+    validation_index = validation_index[:50]
+    RI.selected_test_samples = list(set(auxiliary_index + validation_index))
+    print('validation_index:', validation_index, '\n',
+          'auxiliary_index', auxiliary_index)
 
     # compute SV
     _, _, testSampleFeatureSV, testSampleFeatureSV_ref = FIA_logRead(SV_args)
@@ -579,6 +584,7 @@ def FIA(SV_args):
                 base_algo = SV_args.base_algo,
                 conv_check_num = SV_args.conv_check_num,
                 convergence_threshold = SV_args.convergence_threshold,
+                checker_mode = SV_args.checker_mode,
                 sampling_strategy = SV_args.sampling_strategy,
                 optimization_strategy = SV_args.optimization_strategy,
                 TC_threshold = SV_args.TC_threshold,
@@ -641,7 +647,7 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
     RI = result_interpretation.RI(
         dataset=SV_args.dataset,
         manual_seed=SV_args.manual_seed)
-    RI.selected_test_samples = range(len(RI.Tst))
+    #RI.selected_test_samples = range(len(RI.Tst))
     
     randomTestData, auxiliary_index, \
         testSampleFeatureSV, testSampleFeatureSV_ref = FIA_logRead(SV_args)
@@ -649,6 +655,8 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
         auxiliary_index = np.random.choice(range(len(RI.Tst)),
                                            int(len(RI.Tst)/2),
                                            replace=False).tolist()
+        auxiliary_index = auxiliary_index[:50]
+    
     # generate random data
     if random_mode == 'uniform':
         print('model ', type(RI.model), '---',
@@ -657,11 +665,11 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
             RI.Tst.dataset[auxiliary_index] = torch.FloatTensor(
                 np.random.rand(
                     *RI.Tst.dataset[auxiliary_index].shape))
-            print('random data: ', RI.Tst.dataset[auxiliary_index])
+            print('random data: ', RI.Tst.dataset[auxiliary_index],'\n')
         else:
             RI.X_test[auxiliary_index] = np.random.rand(
                 *RI.X_test[auxiliary_index].shape)
-            print('random data: ', RI.X_test[auxiliary_index])
+            print('random data: ', RI.X_test[auxiliary_index],'\n')
 
     elif random_mode == 'normal':
         print('model ', type(RI.model), '---',
@@ -670,11 +678,11 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
             RI.Tst.dataset[auxiliary_index] = torch.FloatTensor(
                 np.random.normal(
                     0.5, 0.25, RI.Tst.dataset[auxiliary_index].shape))
-            print('random data: ', RI.Tst.dataset[auxiliary_index])
+            print('random data: ', RI.Tst.dataset[auxiliary_index],'\n')
         else:
             RI.X_test[auxiliary_index] = np.random.normal(
                 0.5, 0.25, RI.X_test[auxiliary_index].shape)
-            print('random data: ', RI.X_test[auxiliary_index])
+            print('random data: ', RI.X_test[auxiliary_index],'\n')
     else:
         # use true data samples as the randomly-generated data sample
         pass
@@ -689,6 +697,8 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
     RI.randomSet = auxiliary_index
 
     validation_index = list(set(range(len(RI.Tst)))-set(auxiliary_index))
+    validation_index = validation_index[:50]
+    RI.selected_test_samples = list(set(auxiliary_index + validation_index))
     print('validation_index:', validation_index, '\n',
           'auxiliary_index', auxiliary_index)
 
@@ -712,6 +722,7 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
                 base_algo = SV_args.base_algo,
                 conv_check_num = SV_args.conv_check_num,
                 convergence_threshold = SV_args.convergence_threshold,
+                checker_mode = SV_args.checker_mode,
                 sampling_strategy = SV_args.sampling_strategy,
                 optimization_strategy = SV_args.optimization_strategy,
                 TC_threshold = SV_args.TC_threshold,

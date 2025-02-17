@@ -21,7 +21,7 @@ class FL():
             'mnist': (10, 10, 10, 1, 1, 64, 0.1, 1, '6', 1000),
             'wind': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', 657),
             'adult': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', int(48842/10)),
-            'dota': (2, 10, 10, 50, 3, 64, 0.005, 1, '1', int(102944/10)), # 被删除 hero24 和 hero108，因为全是 0
+            'dota': (2, 10, 10, 115, 10, 64, 0.005, 1, '1', int(102944/10)),
         }
         self.num_classes, self.num_clients, self.max_round,     \
             self.num_channels, self.local_ep, self.local_bs,    \
@@ -137,7 +137,7 @@ class FL():
                 agg_results = self.weighted_avg(localUpdates, p_k)
                 global_model.load_state_dict(agg_results)
                 print(f'Round {ridx} time cost: {time.time()-start_time}'+\
-                      ' global model performance: ',DNNTest(global_model, self.Tst))
+                      ' global model performance: ',DNNTest(global_model, self.Tst, pred_print=True))
         #print('skippable_test_sample: ', self.skippable_test_sample)
         
         

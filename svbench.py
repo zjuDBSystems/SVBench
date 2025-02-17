@@ -53,6 +53,7 @@ class SVBench():
                 algo=base_algo, player_num=self.player_num),
             output=Output(
                 convergence_threshold=args.get('convergence_threshold'),
+                checker_mode = args.get('checker_mode'),
                 cache_size=args.get('conv_check_num'),
                 player_num=self.player_num,
                 privacy_protection_measure=args.get(
@@ -107,18 +108,21 @@ class SVBench():
     def pre_exp_statistic(self):
         print('【Problem Scale of SV Computation】')
         print('Total number of players: ', self.player_num)
+        print('Total number of utility computations: ',
+              '%e' % (2**self.player_num))
+        '''
         print('(coalition sampling) Total number of utility computations: ',
               '%e' % (2*self.player_num * 2**(self.player_num-1)))
         print('(permutation sampling) Total number of utility computations:',
               '%e' % (2*self.player_num * math.factorial(self.player_num)))
-
+        '''
         utility_computation_timecost = dict()
         for player_idx in range(self.player_num):
             start_time = time.time()
-            utility = self.utility_function(range(player_idx))
+            utility = self.utility_function(range(1+player_idx))
             time_cost = time.time() - start_time
             print(
-                f'Computing utility with {player_idx + 1} players takes {time_cost} timeCost with utility equal to {utility}...')
+                f'Computing utility with {1+player_idx} players takes {time_cost} timeCost with utility equal to {utility}...')
             utility_computation_timecost[player_idx] = time_cost
 
         print('Average time cost for computing utility:',
