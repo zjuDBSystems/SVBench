@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 from .data_preparation import data_prepare
-from .nets import RegressionModel, NN
+from .nets import RegressionModel, NN, NN_ttt
 from .utils import DNNTrain, DNNTest
 
 
@@ -12,13 +12,37 @@ class DV():
     def __init__(self, dataset, manual_seed, GA):
         self.GA = GA
         self.dataset_info = {
-            'iris': (3, 4, 100, 16, 0.05),
-            'wine': (3, 13, 100, 16, 0.001),
-            'wind': (2, 14, 100, 16, 0.01),
-            'ttt': (2, 9, 100, 16, 0.01)
+            'iris': (3, 4, 100, 16, 0.05, 
+                     {42:
+                      [23, 71, 98, 55, 67, 8, 11, 82, 15, 12, 93, 99, 106, 101, 81, 21, 68, 77],
+                      10: 
+                      [33, 13, 104, 14, 27, 52, 110, 82, 47, 18, 95, 12, 109, 85, 24, 106, 42, 119],
+                      100: 
+                      [26, 4, 66, 52, 35, 78, 53, 39, 110, 82, 95, 115, 16, 46, 21, 63, 24, 106]
+                      }
+                     ),
+            'wine': (3, 13, 100, 16, 0.001, 
+                     {42: 
+                      [23, 30, 47, 40, 111, 94, 131, 84, 109, 58, 41, 135, 70, 101, 78],
+                      10: 
+                      [61, 98, 118, 21, 92, 65, 140, 58, 100, 131, 108, 105, 35, 113, 17],
+                      100: 
+                      [118, 139, 49, 76, 55, 65, 140, 66, 92, 97, 141, 2, 106, 17, 95, 70, 72, 27]
+                       }),
+            'wind': (2, 14, 100, 16, 0.01, 
+                     {42: 
+                      [2598, 3025, 3549, 2232, 1820, 5045, 648, 4592, 3771, 2853, 1605, 4593, 4399, 1835, 2289, 4689, 1499, 1411],
+                      10: 
+                      [514, 966, 1906, 2825, 5231, 4892, 2604, 3021, 4344, 1091, 374, 4832, 3973, 1212, 1773, 3998, 3577, 1112, 2947, 1809, 2318, 1698, 4303],
+                      100: 
+                      [2715, 3636, 2327, 4557, 1810, 1041, 4051, 4811, 1263, 2605, 945, 4687, 4947, 614, 1216, 319, 4595, 4084, 901, 4199]
+                      }),
+            'ttt': (2, 9, 200, 16, 0.001,
+                    {42:None, 10:None, 100:None}),
+            
         }
-        self.num_classes, self.num_feature, self.ep, self.bs, self.lr  \
-            = self.dataset_info[dataset]
+        self.num_classes, self.num_feature, \
+        self.ep, self.bs, self.lr, select_idx = self.dataset_info[dataset]
 
         self.model = None
         self.dataset = dataset
@@ -29,33 +53,39 @@ class DV():
                          dataset=dataset,
                          num_classes=self.num_classes)
         
+        
         # player setting
         self.Tst = torch.load('data/%s0/test.pt' % (dataset))
         self.trn_data = torch.load(trn_path)
         # adjust the scale of players in order to generate exact SV with limited computing budgets
-        if len(self.trn_data)<15:
-            pass
+        if select_idx[manual_seed]!=None:
+            self.trn_data.idxs = select_idx[manual_seed]
         else:
             unique_labels = np.unique(self.trn_data.labels)
             label_count = dict()
             for l in unique_labels:
                 label_count[l]=list(self.trn_data.labels).count(l)
             
-            if self.dataset in ['wine', 'ttt']:
+            loss_func = torch.nn.CrossEntropyLoss()
+            if self.dataset in ['wine']:
                 self.model = NN(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
+            elif self.dataset in ['ttt']:
+                self.model = NN_ttt(num_feature=self.num_feature,
+                                num_classes=self.num_classes)
+                
             else:
                 self.model = RegressionModel(
                     num_feature=self.num_feature,
                     num_classes=self.num_classes)
             model_trained_on_complete_dataset = DNNTrain(
                 self.model, self.trn_data, self.lr,
-                self.ep, self.bs, torch.nn.CrossEntropyLoss())
+                self.ep, self.bs, loss_func)
             base_overall_utility = DNNTest(
                 model_trained_on_complete_dataset, self.Tst,
                 metric='tst_accuracy')
-
-            for num_players in range(15, 25):
+            num_players_utility = dict()
+            for num_players in range(15, 100):
                 select_idx = []
                 for lidx, l in enumerate(unique_labels):
                     if lidx == len(unique_labels)-1:
@@ -72,20 +102,36 @@ class DV():
                 tmp_trn_data.idxs = select_idx
                 tmp_model = DNNTrain(
                     self.model, tmp_trn_data, self.lr,
-                    self.ep, self.bs, torch.nn.CrossEntropyLoss())
+                    self.ep, self.bs, loss_func)
                 tmp_utility = DNNTest(tmp_model, self.Tst,
                                       metric='tst_accuracy')
-                print('num_players: ', num_players,
+                num_players_utility[num_players] = (tmp_utility,select_idx)
+                print('select_idx: ', select_idx, '\n',
+                      'num_players: ', num_players,
                       'tmp_utility: ', tmp_utility, 
                       ' base_overall_utility:',base_overall_utility)
-                # finding the minimal number of players 
-                # whose collective utility can reach at least 
-                # 80% of base_overall_utility
-                if tmp_utility >= base_overall_utility*0.8:
-                    break
-            self.trn_data = tmp_trn_data
+            
+            # finding the minimal number of players 
+            # whose collective utility can reach at least 
+            # 80% of base_overall_utility
+            qualified_items = []
+            max_utility = 0
+            for num_players, res in num_players_utility.items():
+                if res[0]>max_utility:
+                    qualified_items = [num_players]
+                    max_utility = res[0]
+                elif res[0] == max_utility:
+                    qualified_items.append(num_players)
+            self.trn_data.idxs = num_players_utility[min(qualified_items)][1]
+            print('final select_idx: ', self.trn_data.idxs, '\n',
+                  ' overall_utility:',num_players_utility[min(qualified_items)][0])
+            if max_utility < base_overall_utility*0.75:
+                print('Warning: overall utility is not qualified'+\
+                      'after reducing the number of training data!')
+            
         self.players = self.trn_data
-
+        exit()
+        
     def utility_computation(self, player_list):
         # server for MIA (no use in the other cases)
         player_list = [self.trn_data.idxs[pidx]
@@ -97,7 +143,7 @@ class DV():
                 len(player_list) <= 0:
             if self.GA:
                 print('model initialize...')
-            if self.dataset in ['wine', 'ttt']:
+            if self.dataset == 'wine':
                 self.model = NN(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
             else:

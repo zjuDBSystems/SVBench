@@ -46,6 +46,22 @@ class NN(nn.Module):
         return x
 
 
+class NN_ttt(nn.Module):
+    def __init__(self, num_feature, num_classes):
+        super(NN_ttt, self).__init__()
+        self.fc1 = nn.Linear(num_feature, 64)
+        self.bn1 = nn.BatchNorm1d(64)  # 添加批归一化
+        self.fc2 = nn.Linear(64, 32)
+        self.bn2 = nn.BatchNorm1d(32)  # 添加批归一化
+        self.fc3 = nn.Linear(32, num_classes)
+
+    def forward(self, x):
+        x = torch.relu(self.bn1(self.fc1(x)))
+        x = torch.relu(self.bn2(self.fc2(x)))
+        x = self.fc3(x)  
+        return x
+
+
 class CNN(nn.Module):
     def __init__(self, num_channels, num_classes):
         super(CNN, self).__init__()

@@ -4,7 +4,7 @@ import numpy as np
 import torch.nn.functional as F
 
 from torch.utils.data import DataLoader
-from .nets import CNN, RegressionModel, LinearAttackModel, CNNCifar, NN
+from .nets import CNN, RegressionModel, LinearAttackModel, CNNCifar, NN, NN_ttt
 from sklearn import metrics
 
 TEST_BS = 128
@@ -58,7 +58,7 @@ def DNNTrain(model, trn_data, lr, epoch=1, batch_size=128, loss_func=None,
         model.train()
         for (n, p) in model.named_parameters():
             p.requires_grad = True
-        if type(model) == NN:
+        if type(model) in [NN, NN_ttt]:
             optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         else:
             optimizer = torch.optim.SGD(
