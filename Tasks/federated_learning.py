@@ -11,6 +11,7 @@ from .data_preparation import data_prepare
 
 class FL():
     def __init__(self, dataset, manual_seed, GA, TSS):
+        torch.cuda.empty_cache()
         self.GA = GA
         self.TSS = TSS
         self.dataset = dataset
@@ -19,7 +20,8 @@ class FL():
             'cifar': (10, 10, 10, 3, 3, 64, 0.1, 1, '5', 1000),
             'mnist': (10, 10, 10, 1, 1, 64, 0.1, 1, '6', 1000),
             'wind': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', 657),
-            'adult': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', int(48842/10))
+            'adult': (2, 10, 10, 14, 3, 64, 0.01, 1, '1', int(48842/10)),
+            'dota': (2, 10, 10, 115, 10, 64, 0.005, 1, '1', int(102944/10)),
         }
         self.num_classes, self.num_clients, self.max_round,     \
             self.num_channels, self.local_ep, self.local_bs,    \
@@ -135,7 +137,7 @@ class FL():
                 agg_results = self.weighted_avg(localUpdates, p_k)
                 global_model.load_state_dict(agg_results)
                 print(f'Round {ridx} time cost: {time.time()-start_time}'+\
-                      ' global model performance: ',DNNTest(global_model, self.Tst))
+                      ' global model performance: ',DNNTest(global_model, self.Tst, pred_print=True))
         #print('skippable_test_sample: ', self.skippable_test_sample)
         
         
@@ -160,11 +162,11 @@ class FL():
         elif self.dataset == 'mnist':
             global_model = CNN(num_channels=self.num_channels,
                                num_classes=self.num_classes)
-        elif self.dataset == 'wind':
+        elif self.dataset in ['wind']:
             global_model = RegressionModel(
                 num_feature=self.num_channels,
                 num_classes=self.num_classes)
-        elif self.dataset == 'adult':
+        elif self.dataset in ['adult', 'dota']:
             global_model = NN(num_feature=self.num_channels,
                             num_classes=self.num_classes)
         return global_model

@@ -8,6 +8,7 @@ from checker import Checker
 class Output():
     def __init__(self,
                  convergence_threshold,
+                 checker_mode,
                  cache_size,
                  player_num,
                  privacy_protection_measure,
@@ -18,6 +19,7 @@ class Output():
         self.aggregator = Aggregator(algo, player_num)
         self.checker = Checker(player_num,
                                cache_size, convergence_threshold)
+        self.checker_mode = checker_mode
         self.privacy = Privacy(
             measure=privacy_protection_measure,
             level=privacy_protection_level)
@@ -32,7 +34,10 @@ class Output():
         print(f'Iteration {iter_times} done:')
         print(f"Current SV: {SVs}")
         print(f"Current times of utility computation: {utility_comp_times}")
-        if not self.checker.convergence_check(SVs_var) and not full_sample:
+        if not self.checker.convergence_check(
+                SVs_var, utility_comp_times, iter_times,
+                checker_mode=self.checker_mode) and \
+        not full_sample:
             # not yet reach the algorithm termination criterion
             return False
         if full_sample: 
