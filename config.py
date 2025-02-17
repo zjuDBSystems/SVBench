@@ -14,6 +14,7 @@ BENCHMARK = {
         'cifar': (10),
         'mnist': (10),
         'wind': (10),
+        'adult': (10),
         'dota': (10)
     },
     'RI': {
