@@ -16,17 +16,15 @@ def find_free_device():
     Return -1 if no GPU is available.
     """
     free_gpu_index = -1
-    free_gpu_memory = -1
-
-    for gpu_index in range(torch.cuda.device_count()):
-        gpu_memory_allocated = torch.cuda.memory_allocated(device=gpu_index)
-        if gpu_memory_allocated == 0:
-            free_gpu_index = gpu_index
-            break
-        elif free_gpu_memory < 0 or gpu_memory_allocated < free_gpu_memory:
-            free_gpu_index = gpu_index
-            free_gpu_memory = gpu_memory_allocated
-
+    free_memory = [
+        torch.cuda.get_device_properties(gpu_index).total_memory-\
+            torch.cuda.memory_allocated(device=gpu_index) \
+            for gpu_index in range(torch.cuda.device_count())]
+    if len(np.unique(free_memory))==1:
+        free_gpu_index = int(
+            np.random.choice(range(torch.cuda.device_count()), 1))
+    else:
+        free_gpu_index = np.argmax(free_memory)
     return torch.device(
         'cuda:{}'.format(free_gpu_index)
         if free_gpu_index != -1 and torch.cuda.is_available() else 'cpu'
@@ -81,7 +79,8 @@ def DNNTrain(model, trn_data, lr, epoch=1, batch_size=128, loss_func=None,
                             np.max(val_results[-3:]) < 0.1*val_results[0]:
                         convergeFlag = True
 
-            # model.zero_grad()
+            model.zero_grad()
+            optimizer.zero_grad()
 
             data = batch[0].to(device)
             labels = batch[1].to(device)
@@ -89,7 +88,6 @@ def DNNTrain(model, trn_data, lr, epoch=1, batch_size=128, loss_func=None,
             net_outputs = model(data)
             # loss
             loss = loss_func(net_outputs, labels)
-            optimizer.zero_grad()
             loss.backward()
             if max_norm > 0:
                 torch.nn.utils.clip_grad_norm_(
@@ -146,11 +144,6 @@ def DNNTest(model, test_data,
             y_pred = outputs.data.max(1, keepdim=True)[1]
             correct += y_pred.eq(labels.data.view_as(y_pred)
                                     ).long().cpu().sum()
-            # if batch_idx == 0 and pred_print:
-            #     print("outputs.data", outputs.data.tolist())
-            #     print("y_pred:\n", y_pred.tolist())
-            #     print("labels.data:\n", labels.data.tolist())
-            
 
         elif metric == 'tst_loss':
             loss = F.cross_entropy(outputs, labels, reduction='sum').item()
@@ -172,18 +165,3 @@ def DNNTest(model, test_data,
                             torch.tensor(np.concatenate(targets)))
 
     return utility
-
-
-def AdultTrain(model, X_train, y_train):
-    model.fit(X_train, y_train)
-    return model
-
-
-def AdultTest(model, testData, metric='tst_accuracy'):
-    X_test = testData.iloc[:, :-1]
-    y_test = testData.iloc[:, -1]
-    prediction = model.predict(X_test)
-    if metric == 'tst_accuracy':
-        return metrics.r2_score(y_test, prediction)
-    elif metric == 'prediction':
-        return prediction

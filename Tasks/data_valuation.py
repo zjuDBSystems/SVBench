@@ -37,8 +37,9 @@ class DV():
                       100: 
                       [2715, 3636, 2327, 4557, 1810, 1041, 4051, 4811, 1263, 2605, 945, 4687, 4947, 614, 1216, 319, 4595, 4084, 901, 4199]
                       }),
-            'ttt': (2, 9, 200, 16, 0.001,
-                    {42:None, 10:None, 100:None}),
+            'ttt': (2, 9, 100, 16, 0.001,
+                    {42: [424, 618, 665, 748, 471, 54, 659, 34, 151, 501, 293, 765, 117, 653, 649, 192, 170, 270, 414, 1, 155, 79], 
+                     10:None, 100:None}),
             
         }
         self.num_classes, self.num_feature, \
@@ -85,7 +86,7 @@ class DV():
                 model_trained_on_complete_dataset, self.Tst,
                 metric='tst_accuracy')
             num_players_utility = dict()
-            for num_players in range(15, 100):
+            for num_players in range(15, 30):
                 select_idx = []
                 for lidx, l in enumerate(unique_labels):
                     if lidx == len(unique_labels)-1:
@@ -124,13 +125,14 @@ class DV():
                     qualified_items.append(num_players)
             self.trn_data.idxs = num_players_utility[min(qualified_items)][1]
             print('final select_idx: ', self.trn_data.idxs, '\n',
+                  ' player num:', len(self.trn_data.idxs), '\n',
                   ' overall_utility:',num_players_utility[min(qualified_items)][0])
             if max_utility < base_overall_utility*0.75:
                 print('Warning: overall utility is not qualified'+\
                       'after reducing the number of training data!')
             
         self.players = self.trn_data
-        exit()
+        # exit()
         
     def utility_computation(self, player_list):
         # server for MIA (no use in the other cases)
