@@ -11,7 +11,7 @@ from sklearn.tree import DecisionTreeRegressor
 
 from .data_preparation import data_prepare
 from .nets import NN, RegressionModel
-from .utils import DNNTrain, DNNTest, find_free_device, AdultTrain, AdultTest
+from .utils import DNNTrain, DNNTest, find_free_device
 
 
 class RI():
