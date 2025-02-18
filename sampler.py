@@ -1,7 +1,7 @@
 import random
 import math
 import numpy as np
-
+from scipy.special import comb
 
 class Sampler():
     def __init__(self, sampling, algo, player_num):
@@ -11,7 +11,8 @@ class Sampler():
         self.sampling_times = 0
         self.permutations = []
         self.coalitions = set()
-
+        self.coalitionSizeCount = dict([(size,0) for size in range(player_num+1)])
+        
     def generateRandomPermutation(self):
         if len(self.permutations) >= math.factorial(self.player_num):
             return None
@@ -32,13 +33,13 @@ class Sampler():
         return selected_players
 
     def MC_sample(self):
-        last= self.permutations[-1] if len(self.permutations) > 0 else list(range(self.player_num))
         if self.sampling == 'random':
             permutation = self.generateRandomPermutation()
         elif self.sampling == 'antithetic':
             permutation = self.generateRandomPermutation() if self.sampling_times % 2 == 1  \
                 else list(reversed(last))
         elif self.sampling == 'stratified':
+            last = self.permutations[-1] if len(self.permutations) > 0 else list(range(self.player_num))
             permutation = self.generateRandomPermutation() if self.sampling_times % len(last) == 1  \
                 else last[-1:] + last[:-1]
         if permutation is None:
@@ -52,12 +53,32 @@ class Sampler():
         # generate Bernoulli random numbers independently
         if q is None or I_mq is None or m is None:
             raise Exception("Parameters(q, I_mq, and m) are required.")
-        if self.sampling == 'antithetic' and m % 2 == 1:
+        if self.sampling == 'stratified':
+            targetCoalitionSize = [
+                size for size in self.coalitionSizeCount.keys()\
+                    if self.coalitionSizeCount[size] < comb(self.player_num, size)
+                    ]
+            targetCoalitionSize = targetCoalitionSize[
+                len(self.coalitions)%len(targetCoalitionSize)]
+            coalition = np.random.choice(
+                range(self.player_num), targetCoalitionSize, replace=False)
+            I_mq = [int(pid in coalition) for pid in range(self.player_num)]
+            while ",".join(map(str, I_mq)) in self.coalitions:
+                coalition = np.random.choice(
+                    range(self.player_num), targetCoalitionSize, replace=False)
+                I_mq = [int(pid in coalition) for pid in range(self.player_num)]
+            self.coalitionSizeCount[len(coalition)] += 1
+            
+        elif self.sampling == 'antithetic' and m % 2 == 1:
             I_mq = 1 - I_mq
         else:
+            if self.sampling == 'antithetic':
+                q *= 0.5
             I_mq = np.random.binomial(1, q, size=(self.player_num))
             while ",".join(map(str, I_mq)) in self.coalitions:
                 q = np.random.rand()
+                if self.sampling == 'antithetic':
+                    q *= 0.5
                 I_mq = np.random.binomial(1, q, size=(self.player_num))
         self.coalitions.add(",".join(map(str, I_mq)))
         return I_mq, False
