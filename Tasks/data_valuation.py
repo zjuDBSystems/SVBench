@@ -40,6 +40,10 @@ class DV():
             'ttt': (2, 9, 100, 16, 0.001,
                     {42: [424, 618, 665, 748, 471, 54, 659, 34, 151, 501, 293, 765, 117, 653, 649, 192, 170, 270, 414, 1, 155, 79], 
                      10:None, 100:None}),
+            'bank': (2, 29, 100, 16, 0.001,
+                    {42: [5801, 431, 5932, 3693, 4711, 5165, 3733, 958, 944, 1635, 4670, 5862, 3153, 1851, 3438, 5128, 4190, 5077], 
+                     10:None, 100:None}),
+            
             
         }
         self.num_classes, self.num_feature, \
@@ -68,13 +72,12 @@ class DV():
                 label_count[l]=list(self.trn_data.labels).count(l)
             
             loss_func = torch.nn.CrossEntropyLoss()
-            if self.dataset in ['wine']:
+            if self.dataset in ['wine', 'bank']:
                 self.model = NN(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
             elif self.dataset in ['ttt']:
                 self.model = NN_ttt(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
-                
             else:
                 self.model = RegressionModel(
                     num_feature=self.num_feature,
@@ -145,7 +148,7 @@ class DV():
                 len(player_list) <= 0:
             if self.GA:
                 print('model initialize...')
-            if self.dataset == 'wine':
+            if self.dataset in ['wine', 'bank']:
                 self.model = NN(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
             else:

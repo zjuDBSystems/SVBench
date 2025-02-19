@@ -9,6 +9,7 @@ from sklearn.datasets import load_iris, load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from torch.utils.data import Dataset
+from sklearn.impute import SimpleImputer
 from ucimlrepo import fetch_ucirepo 
 import openml
 from sklearn.decomposition import PCA
@@ -61,6 +62,7 @@ def preprocess_AdultData(data):
 
 
 def get_datasets(dataset):
+    pd.set_option('display.max_columns', None)
     # load datasets
     if dataset == 'mnist':
         trans_mnist = transforms.Compose([transforms.ToTensor(),
@@ -384,6 +386,45 @@ def get_datasets(dataset):
         print('Dota2 train data shape:', X_train.shape)
         print('Dota2 test data shape:', X_test.shape)
         print('Dota2 labels:', set(y_train.numpy().tolist()))
+
+    elif dataset == 'bank':
+        # fetch dataset 
+        bank_marketing = fetch_ucirepo(id=222)
+        data = pd.concat([bank_marketing.data.features, bank_marketing.data.targets], axis=1)
+        data = data.dropna()
+        y = data['y'].map({'no': 0, 'yes': 1})
+        print("Unique values in y:", y.unique())
+        X = data.drop(['day_of_week', 'month', 'contact', 'y'], axis = 1)
+        X = pd.get_dummies(X, columns=['job', 'marital', 'education', 'poutcome'])
+        for column in X.columns:
+            if X[column].dtype == 'object':  # 只对字符串类型的列进行操作
+                X[column] = X[column].map({'no': 0, 'yes': 1})
+        bool_cols = X.select_dtypes(include='bool').columns
+        X[bool_cols] = X[bool_cols].astype(int)
+        # print(X.head(10))
+        # 打印预处理后的特征名称和总数量
+        print("Total Number of Features:", len(X.columns))  # 打印特征总数量
+        print("Feature Names:", X.columns.tolist())  # 打印所有特征名称
+        # exit()
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y.to_numpy(), test_size=0.2)
+
+        X_train = torch.FloatTensor(X_train)
+        X_test = torch.FloatTensor(X_test)
+        y_train = torch.LongTensor(y_train)
+        y_test = torch.LongTensor(y_test)
+
+        dataset_train = ImageDataset(X_train, y_train,
+                                     len(X_train), range(len(X_train)))
+        dataset_test = ImageDataset(X_test, y_test,
+                                    len(X_test), range(len(X_test)))
+
+        print('Bank train data shape:', X_train.shape)
+        print('Bank test data shape:', X_test.shape)
+        print('Bank labels:', set(y_train.numpy().tolist()))
+
 
     else:
         exit('Error: unrecognized dataset')
