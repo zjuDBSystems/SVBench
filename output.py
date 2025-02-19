@@ -129,9 +129,9 @@ class Aggregator():
             # the results printed here are necessary for the final set of experiments
             # for generating the figure of overall utility variance caused by
             # adding or removing players
-            # print(('[%s] Player %s: delta_utility: %s, SV_bef: %s, SV_aft: %s.') % (
-            #     datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            #     player_id, delta_utility, old_SV, self.SV[player_id]))
+            print(('[%s] Player %s: delta_utility: %s, SV_bef: %s, SV_aft: %s.') % (
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                player_id, delta_utility, old_SV, self.SV[player_id]))
 
         # update SV_var
         for player_id in range(self.player_num):
@@ -267,7 +267,7 @@ class Privacy():
 
     def quantization(self, SVs):
         # level=0~1
-        level = int(len(SVs)*(1-self.level))
+        level = max(1, round(len(SVs)*(1-self.level)))
         sorted_SV = sorted(SVs.values())
         interval = int(np.ceil(len(SVs)/level))
         quantization_map = dict()
@@ -289,16 +289,18 @@ class Privacy():
 
     def dimension_reduction(self, SVs, SVs_var):
         if len(SVs_var) == len(SVs):
+            level = max(1, round(len(SVs_var)*(1-self.level)))
             exposed_idx = dict(
                 sorted(SVs_var.items(),
-                       key=lambda item: item[1])[-int(len(SVs_var)*(1-self.level)):]
-            ).keys()
+                       key=lambda item: item[1])[-level:]
+            ).keys() # select the players with large SV_var to expose
 
         else:
+            level = max(1, round(len(SVs)*(1-self.level)))
             exposed_idx = dict(
                 sorted(SVs.items(),
-                       key=lambda item: item[1])[-int(len(SVs)*(1-self.level)):]
-            ).keys()
+                       key=lambda item: item[1])[-level:]
+            ).keys() # select the players with large SV_var to expose
         return dict([(key, (SVs[key] if key in exposed_idx else 0))
                     for key in SVs.keys()])
 
