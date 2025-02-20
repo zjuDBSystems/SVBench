@@ -267,7 +267,7 @@ class Privacy():
 
     def quantization(self, SVs):
         # level=0~1
-        level = int(len(SVs)*(1-self.level))
+        level = max(1, round(len(SVs)*(1-self.level)))
         sorted_SV = sorted(SVs.values())
         interval = int(np.ceil(len(SVs)/level))
         quantization_map = dict()
@@ -289,16 +289,18 @@ class Privacy():
 
     def dimension_reduction(self, SVs, SVs_var):
         if len(SVs_var) == len(SVs):
+            level = max(1, round(len(SVs_var)*(1-self.level)))
             exposed_idx = dict(
                 sorted(SVs_var.items(),
-                       key=lambda item: item[1])[-int(len(SVs_var)*(1-self.level)):]
-            ).keys()
+                       key=lambda item: item[1])[-level:]
+            ).keys() # select the players with large SV_var to expose
 
         else:
+            level = max(1, round(len(SVs)*(1-self.level)))
             exposed_idx = dict(
                 sorted(SVs.items(),
-                       key=lambda item: item[1])[-int(len(SVs)*(1-self.level)):]
-            ).keys()
+                       key=lambda item: item[1])[-level:]
+            ).keys() # select the players with large SV_var to expose
         return dict([(key, (SVs[key] if key in exposed_idx else 0))
                     for key in SVs.keys()])
 

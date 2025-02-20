@@ -8,7 +8,8 @@ BENCHMARK = {
         'iris': (120),
         'wine': (142),
         'wind': (5259),
-        'ttt': (766)
+        'ttt': (766),
+        'bank': (7907)
     },
     'FL': {
         'cifar': (10),
