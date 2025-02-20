@@ -135,17 +135,21 @@ class Shapley():
                 else:
                     os.system(f'type NUL > {self.utility_record_file}')#for windows
                 create = True
-            with portalocker.Lock(self.utility_record_file, 
-                                  mode="r+", timeout=300) as file:
-                with self.utility_record_write_lock:
-                    if not create:
-                        self.utility_records.update(eval(file.read().strip()))
-                        # self.utility_records.update(json.load(file))
-                    self.dirty_utility_record_num = 0
-                    ur = self.utility_records.copy()
-                file.seek(0)
-                file.write(str(ur))
-            self.utility_record_filewrite_lock.release()
+            try:
+                with portalocker.Lock(self.utility_record_file, 
+                                    mode="r+", timeout=10) as file:
+                    with self.utility_record_write_lock:
+                        if not create:
+                            self.utility_records.update(eval(file.read().strip()))
+                            # self.utility_records.update(json.load(file))
+                        self.dirty_utility_record_num = 0
+                        ur = self.utility_records.copy()
+                    file.seek(0)
+                    file.write(str(ur))
+            except portalocker.exceptions.AlreadyLocked:
+                print("portalocker.exceptions.AlreadyLocked, skip...")
+            finally:
+                self.utility_record_filewrite_lock.release()
 
     def if_truncation(self, bef_addition):
         utility_change_rate = np.abs((self.task_total_utility - bef_addition)
