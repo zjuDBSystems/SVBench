@@ -27,7 +27,9 @@ BENCHMARK = {
     'DSV': {
         'mnist': (10),
         'cifar': (10),
-        '2dplanes':(10)
+        '2dplanes':(10),
+        'bank': (10),
+        'dota': (10)
     }
 }
 
