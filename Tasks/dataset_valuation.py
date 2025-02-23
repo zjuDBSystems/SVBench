@@ -18,7 +18,7 @@ class DSV():
             'cifar': (10, 3, 1, 128, 0.1, 5000),
             '2dplanes': (2, 10, 100, 64, 0.01, 3261),
             'bank': (2, 29, 100, 16, 0.001, 628),
-            'dota': (2, 115, 100, 10, 64, 0.005, 1000)
+            'dota': (2, 115, 10, 64, 0.005, 8236)
         }
         self.num_classes, self.num_feature, self.ep, \
             self.bs, self.lr, self.tuple_to_set  = self.dataset_info[dataset]
