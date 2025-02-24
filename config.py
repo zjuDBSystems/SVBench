@@ -2,7 +2,7 @@ import sys, os
 from collections import namedtuple
 
 OUT_PRINT_FLUSH_INTERVAL = 5
-UTILITY_RECORD_FILEWRITE_INTERVAL = 10
+UTILITY_RECORD_FILEWRITE_INTERVAL = 100
 BENCHMARK = {
     'DV': {
         'iris': (120),
@@ -27,7 +27,9 @@ BENCHMARK = {
     'DSV': {
         'mnist': (10),
         'cifar': (10),
-        '2dplanes':(10)
+        '2dplanes':(10),
+        'bank': (10),
+        'dota': (10)
     }
 }
 

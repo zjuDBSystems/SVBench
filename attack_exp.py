@@ -180,12 +180,15 @@ def MIA_addPrivacyProtection(qidx, value, ref,
             list([sv for (sv, var) in SV_out_ref[sv_idx].values()])).tolist()
         sortResult_bef = [sortResult_bef.index(k)
                           for k in SV_out_ref[sv_idx].keys()]
-
+        if sv_idx==0:
+            print(f'\n (bef PPM) SV_out_ref {sv_idx}:', SV_out_ref[sv_idx].items())
         SV_with_protect = privacy_protect(
             dict([(k, sv) for (k, (sv, var)) in SV_out_ref[sv_idx].items()]),
             dict([(k, var) for (k, (sv, var)) in SV_out_ref[sv_idx].items()]))
         SV_out[sv_idx] = SV_with_protect[len(SV_with_protect)-1]
-
+        if sv_idx==0:
+            print(f'(aft PPM) SV_out_ref {sv_idx}:', SV_with_protect.items(),'\n')
+        
         sortResult_aft = np.argsort(
             list(SV_with_protect.values())).tolist()
         sortResult_aft = [sortResult_aft.index(k)

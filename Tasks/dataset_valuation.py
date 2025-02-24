@@ -16,7 +16,9 @@ class DSV():
             #'wine': (3, 13, 100, 16, 0.001, 15),
             'mnist': (10, 1, 1, 128, 0.1, 6000),
             'cifar': (10, 3, 1, 128, 0.1, 5000),
-            '2dplanes': (2, 10, 100, 64, 0.01, 3261)
+            '2dplanes': (2, 10, 100, 64, 0.01, 3261),
+            'bank': (2, 29, 100, 16, 0.001, 628),
+            'dota': (2, 115, 10, 64, 0.005, 8236)
         }
         self.num_classes, self.num_feature, self.ep, \
             self.bs, self.lr, self.tuple_to_set  = self.dataset_info[dataset]
@@ -66,7 +68,7 @@ class DSV():
             elif self.dataset == 'mnist':
                 self.model = CNN(num_channels=self.num_feature,
                                    num_classes=self.num_classes)
-            elif self.dataset == 'wine':
+            elif self.dataset in ['wine', 'bank', 'dota']:
                 self.model = NN(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
             else:
