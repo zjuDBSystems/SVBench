@@ -312,6 +312,6 @@ class Privacy():
         elif self.measure == 'QT':
             return self.quantization(SVs)
         elif self.measure == 'DR':
-            for player_id in SVs_var.keys():
-                SVs_var[player_id] = np.var(SVs_var[player_id])
+            # for player_id in SVs_var.keys():
+            #     SVs_var[player_id] = np.var(SVs_var[player_id])
             return self.dimension_reduction(SVs, SVs_var)
