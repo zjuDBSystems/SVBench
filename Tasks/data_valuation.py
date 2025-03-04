@@ -39,7 +39,8 @@ class DV():
                       }),
             'ttt': (2, 9, 100, 16, 0.001,
                     {42: [424, 618, 665, 748, 471, 54, 659, 34, 151, 501, 293, 765, 117, 653, 649, 192, 170, 270, 414, 1, 155, 79], 
-                     10:None, 100:None}),
+                     10:[424, 618, 665, 748, 471, 54, 659, 34, 151, 501, 293, 765, 117, 653, 649, 192, 170, 270, 414, 1, 155, 79], 
+                     100:[424, 618, 665, 748, 471, 54, 659, 34, 151, 501, 293, 765, 117, 653, 649, 192, 170, 270, 414, 1, 155, 79]}),
             'bank': (2, 29, 100, 16, 0.001,
                     {42: [5801, 431, 5932, 3693, 4711, 5165, 3733, 958, 944, 1635, 4670, 5862, 3153, 1851, 3438, 5128, 4190, 5077], 
                      10:None, 100:None}),
@@ -60,8 +61,8 @@ class DV():
         
         
         # player setting
-        self.Tst = torch.load('data/%s0/test.pt' % (dataset))
-        self.trn_data = torch.load(trn_path)
+        self.Tst = torch.load('data/%s0/test.pt' % (dataset), weights_only=False)
+        self.trn_data = torch.load(trn_path, weights_only=False)
         # adjust the scale of players in order to generate exact SV with limited computing budgets
         if select_idx[manual_seed]!=None:
             self.trn_data.idxs = select_idx[manual_seed]

@@ -28,7 +28,7 @@ def args_parser():
                         help="SV cache_size")
     parser.add_argument('--base_algo', type=str, default="MC",
                         help="{MC, RE, MLE, GT, CP}")
-    parser.add_argument('--convergence_threshold', type=float, default=0.001,
+    parser.add_argument('--convergence_threshold', type=float, default=0.01,
                         help="approximation convergence_threshold")
     parser.add_argument('--checker_mode', type=str, default='SV_var',
                         help="checker_mode: SV_var or comp_count")
