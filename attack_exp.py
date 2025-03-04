@@ -560,9 +560,9 @@ def FIA(SV_args):
     auxiliary_index = np.random.choice(range(len(RI.Tst)),
                                        int(len(RI.Tst)/2),
                                        replace=False).tolist()
-    auxiliary_index = auxiliary_index[:50]
+    auxiliary_index = auxiliary_index[:10]
     validation_index = list(set(range(len(RI.Tst)))-set(auxiliary_index))
-    validation_index = validation_index[:50]
+    validation_index = validation_index[:10]
     RI.selected_test_samples = list(set(auxiliary_index + validation_index))
     print('validation_index:', validation_index, '\n',
           'auxiliary_index', auxiliary_index)
@@ -654,53 +654,52 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
     
     randomTestData, auxiliary_index, \
         testSampleFeatureSV, testSampleFeatureSV_ref = FIA_logRead(SV_args)
+    
     if len(auxiliary_index) <= 0:
         auxiliary_index = np.random.choice(range(len(RI.Tst)),
                                            int(len(RI.Tst)/2),
                                            replace=False).tolist()
-        auxiliary_index = auxiliary_index[:50]
-    
+        auxiliary_index = auxiliary_index[:10]
+    validation_index = list(set(range(len(RI.Tst)))-set(auxiliary_index))
+    validation_index = validation_index[:10]
+    '''
+    validation_index = auxiliary_index[ : int(len(auxiliary_index)/2)]
+    randomTestData = randomTestData[int(len(auxiliary_index)/2) : ]
+    auxiliary_index = auxiliary_index[int(len(auxiliary_index)/2) : ]
+    '''
     # generate random data
     if random_mode == 'uniform':
         print('model ', type(RI.model), '---',
               'replace %s with random samples (uniform)...' % auxiliary_index)
-        if 'Nets' in str(type(RI.model)):
-            RI.Tst.dataset[auxiliary_index] = torch.FloatTensor(
-                np.random.rand(
-                    *RI.Tst.dataset[auxiliary_index].shape))
-            print('random data: ', RI.Tst.dataset[auxiliary_index],'\n')
-        else:
-            RI.X_test[auxiliary_index] = np.random.rand(
-                *RI.X_test[auxiliary_index].shape)
-            print('random data: ', RI.X_test[auxiliary_index],'\n')
-
+        RI.Tst.dataset[auxiliary_index] = (
+            torch.FloatTensor(
+                np.array([randomTestData[test_sample_idx] \
+                          for test_sample_idx in auxiliary_index])) \
+                if len(randomTestData)>0 else\
+                    torch.FloatTensor(
+                        np.random.rand(
+                            *RI.Tst.dataset[auxiliary_index].shape))
+                    )
+        print('random data: ', RI.Tst.dataset[auxiliary_index],'\n')
     elif random_mode == 'normal':
         print('model ', type(RI.model), '---',
               'replace %s with random samples (normal)...' % auxiliary_index)
-        if 'Nets' in str(type(RI.model)):
-            RI.Tst.dataset[auxiliary_index] = torch.FloatTensor(
-                np.random.normal(
-                    0.5, 0.25, RI.Tst.dataset[auxiliary_index].shape))
-            print('random data: ', RI.Tst.dataset[auxiliary_index],'\n')
-        else:
-            RI.X_test[auxiliary_index] = np.random.normal(
-                0.5, 0.25, RI.X_test[auxiliary_index].shape)
-            print('random data: ', RI.X_test[auxiliary_index],'\n')
+        RI.Tst.dataset[auxiliary_index] = (
+            torch.FloatTensor(
+                np.array([randomTestData[test_sample_idx] \
+                          for test_sample_idx in auxiliary_index])) \
+                if len(randomTestData)>0 else\
+                    torch.FloatTensor(
+                        np.random.normal(
+                            0.5, 0.25, RI.Tst.dataset[auxiliary_index].shape))
+                    )
+        print('random data: ', RI.Tst.dataset[auxiliary_index],'\n')
     else:
         # use true data samples as the randomly-generated data sample
         pass
-    for idx in testSampleFeatureSV.keys():
-        if idx not in auxiliary_index:
-            continue
-        if 'Nets' in str(type(RI.model)):
-            RI.Tst.dataset[idx] = torch.FloatTensor(randomTestData[idx])
-        else:
-            RI.X_test[idx] = randomTestData[idx]
-    # print(task.Tst.dataset)
-    RI.randomSet = auxiliary_index
+    
 
-    validation_index = list(set(range(len(RI.Tst)))-set(auxiliary_index))
-    validation_index = validation_index[:50]
+    
     RI.selected_test_samples = list(set(auxiliary_index + validation_index))
     print('validation_index:', validation_index, '\n',
           'auxiliary_index', auxiliary_index)
@@ -717,8 +716,11 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
         # compute SV for only selected test samples for saving time cost
         for test_idx in RI.selected_test_samples:
             RI.Tst.idxs = RI.complete_Tst_idx[test_idx:test_idx+1]
+            print('\n test sample data: ', RI.Tst.dataset[test_idx],
+                  '\n test sample label: ', RI.Tst.labels[test_idx])
+            
             SV, SV_var = sv_calc(
-                task = f'RI_{SV_args.dataset}_Idx{test_idx}',
+                task = f'RI_{SV_args.dataset}_Idx{str(hash(str(RI.Tst.dataset[test_idx])))}',
                 dataset = SV_args.dataset,
                 player_num = len(RI.players),
                 utility_function = RI.utility_computation,
@@ -740,8 +742,6 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
             RI.testSampleFeatureSV_var[test_idx] = dict([
                 (fidx, np.var(SV_var[fidx]))
                 for fidx in SV_var.keys()])
-            print('\n test sample data: ', RI.Tst.dataset[test_idx],
-                  '\n test sample label: ', RI.Tst.labels[test_idx])
             print('SV of test sample %s/%s: ' % (test_idx, len(RI.complete_Tst_idx)),
                   RI.testSampleFeatureSV[test_idx], '\n')
         RI.Tst.idx = RI.complete_Tst_idx
@@ -765,11 +765,8 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
     print('number of reference samples:', m_c, len(auxiliary_SV))
     print('threshold for feature SV difference:', r, gagy)
     print('threshold for feature max diff in references:', tau)
-
-    if 'Nets' in str(type(RI.model)):
-        predictions = np.zeros(RI.Tst.dataset[validation_index].shape)
-    else:
-        predictions = np.zeros(RI.X_test[validation_index].shape)
+    print('random features used for generating inferrence results:', RI.Tst.dataset[auxiliary_index])
+    predictions = np.zeros(RI.Tst.dataset[validation_index].shape)
     num_unsuccess = 0
     for validation_data_idx in range(len(validation_SV)):
         for feature_idx in range(len(validation_SV[validation_data_idx])):
