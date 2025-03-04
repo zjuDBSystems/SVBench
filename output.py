@@ -2,6 +2,7 @@ import datetime
 import pulp
 import numpy as np
 from scipy.optimize import minimize
+from pulp import PULP_CBC_CMD
 
 from checker import Checker
 
@@ -184,7 +185,7 @@ class Aggregator():
         print("feasible problem solving ...")
         MyProbLP += (sum(sv) >= task_total_utility)
         MyProbLP += (sum(sv) <= task_total_utility)
-        MyProbLP.solve()
+        MyProbLP.solve(PULP_CBC_CMD(msg=False))
         result = dict()
         for v in MyProbLP.variables():
             result[int(v.name)] = v.varValue
@@ -311,6 +312,6 @@ class Privacy():
         elif self.measure == 'QT':
             return self.quantization(SVs)
         elif self.measure == 'DR':
-            for player_id in SVs_var.keys():
-                SVs_var[player_id] = np.var(SVs_var[player_id])
+            # for player_id in SVs_var.keys():
+            #     SVs_var[player_id] = np.var(SVs_var[player_id])
             return self.dimension_reduction(SVs, SVs_var)
