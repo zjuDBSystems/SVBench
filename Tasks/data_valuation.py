@@ -60,8 +60,8 @@ class DV():
         
         
         # player setting
-        self.Tst = torch.load('data/%s0/test.pt' % (dataset))
-        self.trn_data = torch.load(trn_path)
+        self.Tst = torch.load('data/%s0/test.pt' % (dataset), weights_only=False)
+        self.trn_data = torch.load(trn_path, weights_only=False)
         # adjust the scale of players in order to generate exact SV with limited computing budgets
         if select_idx[manual_seed]!=None:
             self.trn_data.idxs = select_idx[manual_seed]
