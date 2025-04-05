@@ -14,7 +14,18 @@ class Checker():
         if len(SVs_var[0]) < self.cache_size:
             return False
 
+        count = 0
+        sum_ = 0
+        for (player_id, _) in SVs_var.items():
+            latest_SV = SVs_var[player_id][-1]
+            for ridx in range(2, self.cache_size+1):
+                count += 1
+                sum_ += np.abs((latest_SV-SVs_var[player_id][-ridx]) /
+                               (latest_SV if latest_SV != 0 else 10**(-12)))
 
+        convergence_diff = sum_/(count if count > 0 else 10**(-12))
+        print("Current average convergence_diff (count %s): " % count,
+              convergence_diff)
         if checker_mode == 'comp_count':
             num_players = len(SVs_var)
             if utility_comp_times >= 2**num_players and \
@@ -22,18 +33,6 @@ class Checker():
                 print(f"[{checker_mode}] Convergence checking passed.")
                 return True
         else:
-            count = 0
-            sum_ = 0
-            for (player_id, _) in SVs_var.items():
-                latest_SV = SVs_var[player_id][-1]
-                for ridx in range(2, self.cache_size+1):
-                    count += 1
-                    sum_ += np.abs((latest_SV-SVs_var[player_id][-ridx]) /
-                                   (latest_SV if latest_SV != 0 else 10**(-12)))
-    
-            convergence_diff = sum_/(count if count > 0 else 10**(-12))
-            print("Current average convergence_diff (count %s): " % count,
-                  convergence_diff)
             if convergence_diff <= self.threshold:
                 print(f"[{checker_mode}] Convergence checking passed.")
                 return True
