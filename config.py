@@ -22,6 +22,7 @@ BENCHMARK = {
         'iris': (4),
         'wine': (13),
         'adult': (14),
+        'ttt':(9),
         '2dplanes':(10)
     },
     'DSV': {
