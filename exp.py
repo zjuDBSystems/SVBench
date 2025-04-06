@@ -37,7 +37,7 @@ def args_parser():
                         help="{random, antithetic, stratified}")
     parser.add_argument('--optimization_strategy', type=str, default='',
                         help="")
-    parser.add_argument('--TC_threshold', type=float, default=0.01,
+    parser.add_argument('--TC_threshold', type=float, default=0.1,
                         help="truncation threshold")
 
     # SV's privacy protection parameters
