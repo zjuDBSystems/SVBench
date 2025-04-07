@@ -34,9 +34,9 @@ class Shapley():
         self.sampler = sampler
         self.output = output
 
-        self.task_total_utility = self.utility_function(range(self.player_num))
+        print('computing task total utility...')
+        self.task_total_utility = self.output.task_total_utility #self.utility_function(range(self.player_num))
         print('task total utility: ', self.task_total_utility)
-        self.CP_epsilon = 0.00001
 
         self.truncation_coaliations = dict()
         self.threads = []
