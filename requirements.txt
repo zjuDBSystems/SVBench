@@ -17,6 +17,7 @@ nvidia-cusparse-cu12==12.3.1.170
 nvidia-nccl-cu12==2.21.5
 nvidia-nvjitlink-cu12==12.4.127
 nvidia-nvtx-cu12==12.4.127
+openml==0.15.1
 pandas==2.0.3
 pillow==10.4.0
 portalocker==3.0.0
@@ -35,4 +36,3 @@ typing_extensions==4.12.2
 tzdata==2024.2
 certifi==2024.12.14
 ucimlrepo==0.0.7
-openml==0.15.1

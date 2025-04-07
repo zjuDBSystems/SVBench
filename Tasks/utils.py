@@ -2,7 +2,6 @@ import torch
 import copy
 import numpy as np
 import torch.nn.functional as F
-
 from torch.utils.data import DataLoader
 from .nets import CNN, RegressionModel, LinearAttackModel, CNNCifar, NN, NN_ttt
 from sklearn import metrics

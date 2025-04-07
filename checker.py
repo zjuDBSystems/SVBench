@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class Checker():
     def __init__(self, player_num, cache_size, threshold):
         self.player_num = player_num

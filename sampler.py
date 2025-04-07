@@ -21,7 +21,6 @@ class Sampler():
             random.shuffle(permutation)
         return permutation
     
-
     def generateRandomSubset(self, q_k):
         k = np.random.choice(range(1, self.player_num), p=q_k, size=1)
         selected_players = np.random.choice(

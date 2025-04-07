@@ -7,14 +7,12 @@ import torch.nn.functional as F
 import numpy as np
 from scipy.stats import norm
 from sklearn.metrics import roc_auc_score, accuracy_score
-
 from Tasks.nets import LinearAttackModel
 from Tasks.data_preparation import ImageDataset
 from Tasks.utils import DNNTrain, DNNTest
 from output import Privacy
 from svbench import sv_calc
 from Tasks import data_valuation, result_interpretation
-
 from exp import args_parser, get_output_file_for_pid
 
 def MIA_logRead(SV_args):

@@ -7,7 +7,7 @@ from Tasks import federated_learning, result_interpretation
 def get_output_file_for_pid():
     pid = os.getpid()
     try:
-        # 检查文件描述符
+        # check pid
         fd_dir = f"/proc/{pid}/fd"
         if os.path.exists(fd_dir):
             output_files = set()
@@ -22,7 +22,7 @@ def get_output_file_for_pid():
                     continue
             return list(output_files) if output_files else list()
         
-        # 如果/proc不可用，尝试使用lsof
+        # if /proc can not work, try lsof
         cmd = f"lsof -p {pid} | grep -E 'REG|STDOUT' | awk '{{print $9}}'"
         output = subprocess.check_output(cmd, shell=True, text=True).strip()
         if output:

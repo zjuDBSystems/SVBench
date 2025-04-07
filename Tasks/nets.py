@@ -2,7 +2,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-
 class RegressionModel(nn.Module):
     def __init__(self, num_feature, num_classes):
         super(RegressionModel, self).__init__()

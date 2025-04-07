@@ -3,7 +3,6 @@ import pulp
 import numpy as np
 from scipy.optimize import minimize
 from pulp import PULP_CBC_CMD
-
 from checker import Checker
 
 class Output():

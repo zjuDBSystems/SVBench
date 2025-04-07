@@ -8,7 +8,6 @@ from sampler import Sampler
 from output import Output
 from config import config, BENCHMARK#, OUT_PRINT_FLUSH_INTERVAL
 
-
 class SVBench():
     def __init__(self, args):
         self.args = config(args)

@@ -1291,7 +1291,6 @@ python exp.py --task=FL --dataset=dota --base_algo=MLE --convergence_threshold=0
 python exp.py --task=FL --dataset=wind --base_algo=MLE --convergence_threshold=0
 ```
 
-
 ## Citation
 
 If you find our work helpful, please cite us by

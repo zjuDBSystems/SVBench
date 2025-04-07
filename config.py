@@ -34,7 +34,6 @@ BENCHMARK = {
     }
 }
 
-
 def para_set(args):
     required = ['task']
     # only required for bench tasks:

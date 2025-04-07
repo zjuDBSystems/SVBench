@@ -5,7 +5,6 @@ import warnings
 import portalocker
 import os, sys
 import numpy as np
-
 from config import UTILITY_RECORD_FILEWRITE_INTERVAL
 
 warnings.filterwarnings('ignore')
