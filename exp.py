@@ -1,9 +1,35 @@
 import argparse
 import numpy as np
-import sys
+import os, sys
 from svbench import sv_calc
 from Tasks import federated_learning, result_interpretation
 
+def get_output_file_for_pid():
+    pid = os.getpid()
+    try:
+        # 检查文件描述符
+        fd_dir = f"/proc/{pid}/fd"
+        if os.path.exists(fd_dir):
+            output_files = set()
+            for fd in os.listdir(fd_dir):
+                fd_path = os.path.join(fd_dir, fd)
+                try:
+                    target = os.readlink(fd_path)
+                    if target.endswith(('.log', '.out', '.txt')) or 'nohup' in target:
+                        abs_path = os.path.abspath(target)
+                        output_files.add(abs_path)
+                except OSError:
+                    continue
+            return list(output_files) if output_files else list()
+        
+        # 如果/proc不可用，尝试使用lsof
+        cmd = f"lsof -p {pid} | grep -E 'REG|STDOUT' | awk '{{print $9}}'"
+        output = subprocess.check_output(cmd, shell=True, text=True).strip()
+        if output:
+            return output.split('\n')
+        return list()
+    except Exception:
+        return list()
 
 def args_parser():
     parser = argparse.ArgumentParser()
@@ -59,10 +85,13 @@ def args_parser():
 
 if __name__ == '__main__':
     args = args_parser()
-    if args.log_file!='std':
-        file = open(args.log_file, 'w')
-        sys.stdout = file
-        
+    open_files = get_output_file_for_pid()
+    if len(open_files)>0:
+        args.log_file = open_files[0]
+        print('log file: ', args.log_file)
+    #if args.log_file!='std':
+    #    sys.stdout = open(args.log_file, 'w')
+
     if args.task == 'FL' and 'GA' in args.optimization_strategy:
         FL = federated_learning.FL(
             dataset=args.dataset,

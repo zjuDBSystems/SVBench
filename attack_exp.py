@@ -15,7 +15,7 @@ from output import Privacy
 from svbench import sv_calc
 from Tasks import data_valuation, result_interpretation
 
-from exp import args_parser
+from exp import args_parser, get_output_file_for_pid
 
 def MIA_logRead(SV_args):
     shadowDataset, QueryDataset, inMemberDataset = [], [], []
@@ -799,10 +799,12 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
 
 if __name__ == '__main__':
     args = args_parser()
-    if args.log_file != 'std':
-        old_stdout = sys.stdout
-        file = open(args.log_file, 'w')
-        sys.stdout = file
+    print('log file: ', get_output_file_for_pid())
+    args.log_file = get_output_file_for_pid()[0]
+    #if args.log_file != 'std':
+    #    old_stdout = sys.stdout
+    #    file = open(args.log_file, 'w')
+    #    sys.stdout = file
         
     if args.attack == 'MIA':
         MIA(args.maxIter_in_MIA, args.num_querySample_in_MIA, args)

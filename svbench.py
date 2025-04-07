@@ -35,6 +35,7 @@ class SVBench():
             self.player_num = args.get('player_num')
 
         base_algo = args.get('base_algo')
+        print('initializing Shapley algorithm....')
         self.shapley = Shapley(
             task=self.task,
             player_num=self.player_num,
@@ -64,7 +65,8 @@ class SVBench():
                     range(self.player_num)),
                 task_emptySet_utility=self.utility_function([]),
                 algo=base_algo))
-
+        print('initialization done....')
+        
     def utility_computation_func_load(self, utility_function_api):
         if self.task == 'DV':
             DV = data_valuation.DV(
