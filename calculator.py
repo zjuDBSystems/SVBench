@@ -97,7 +97,13 @@ class Shapley():
         start_time = time.time()
         utility = self.utility_function(player_list)
         time_cost = time.time() - start_time
-        self.write_utility_record(utility_record_idx, utility, time_cost)
+
+        if utility_record_idx not in self.utility_records.keys():
+            with self.utility_record_write_lock:
+                self.utility_records[utility_record_idx] = (utility, time_cost)
+                self.dirty_utility_record_num += 1
+        self.write_utility_record()
+        
         return utility, time_cost, comp_count
 
     def read_history_utility_record(self):
@@ -118,14 +124,7 @@ class Shapley():
         else:
             return {str([]): (0, 0)}
 
-    def write_utility_record(self, utility_record_idx, utility, time_cost):
-        if utility_record_idx in self.utility_records:
-            return
-
-        with self.utility_record_write_lock:
-            self.utility_records[utility_record_idx] = (utility, time_cost)
-            self.dirty_utility_record_num += 1
-
+    def write_utility_record(self):
         if self.dirty_utility_record_num > UTILITY_RECORD_FILEWRITE_INTERVAL    \
                 and self.utility_record_filewrite_lock.acquire(blocking=False):
             create = False
@@ -181,6 +180,9 @@ class Shapley():
         permutation, full_sample, iter_times = self.sampler.sample()
         results = queue.Queue()
         if full_sample:
+            # flush all existing utility records to the record file when full sampling
+            self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+            self.write_utility_record()
             return results, True, iter_times
 
         print('\n Monte Carlo iteration %s: ' % iter_times, permutation)
@@ -256,6 +258,9 @@ class Shapley():
             I_mq, full_sample, iter_times = self.sampler.sample(
                 q=q, I_mq=I_mq, m=m)
             if full_sample:
+                # flush all existing utility records to the record file when full sampling
+                self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+                self.write_utility_record()
                 return results, True, iter_times
             subset = [player_id_
                       for player_id_ in range(self.player_num)
@@ -324,6 +329,9 @@ class Shapley():
             selected_coalitions.append(selected_players)
         
         if full_sample and len(selected_coalitions) ==0:
+            # flush all existing utility records to the record file when full sampling
+            self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+            self.write_utility_record()
             # only when full_sample=True and len(selected_coalitions) ==0 
             # are satisfied simultaneously
             # we do not proceed to the following operations 
@@ -347,6 +355,9 @@ class Shapley():
         phi_t = queue.Queue()
         permutation, full_sample, iter_times = self.sampler.sample()
         if full_sample:
+            # flush all existing utility records to the record file when full sampling
+            self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+            self.write_utility_record()
             return phi_t, True, iter_times
         print('\n Compressive permutation sampling iteration %s: ' %
               iter_times, permutation)
@@ -372,6 +383,9 @@ class Shapley():
         results = queue.Queue()
         permutation, full_sample, iter_times = self.sampler.sample()
         if full_sample:
+            # flush all existing utility records to the record file when full sampling
+            self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+            self.write_utility_record()
             return results, True, iter_times
         
         if self.parallel_threads_num == 1:
