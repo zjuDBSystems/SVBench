@@ -37,7 +37,7 @@ class Shapley():
         self.task_total_utility = 0
         self.CP_epsilon = 0.00001
 
-        self.truncation_coaliations = set()
+        self.truncation_coaliations = dict()
         self.threads = []
 
         self.scanned_coalition = set()
@@ -165,8 +165,11 @@ class Shapley():
         
         if self.if_truncation(bef_addition):
             aft_addition = bef_addition
-            self.truncation_coaliations.add(
-                ",".join(map(str, sorted(permutation[:order+1]))))
+            utility_record_idx = str(
+                sorted(permutation[:order+1])
+                if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
+                else permutation[:order+1])
+            self.truncation_coaliations[utility_record_idx]=bef_addition
         else:
             # utility after adding the targeted player
             aft_addition, time_cost1, comp_count = self.utility_computation_call(
@@ -212,8 +215,11 @@ class Shapley():
                                 results):
         if self.if_truncation(bef_addition):
             aft_addition = bef_addition
-            self.truncation_coaliations.add(
-                ",".join(map(str, sorted(list(subset)+[player_id]))))
+            utility_record_idx = str(
+                sorted(list(subset)+[player_id])
+                if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
+                else list(subset)+[player_id])
+            self.truncation_coaliations[utility_record_idx]=bef_addition
             comp_times = 0
             time_cost1 = 0
         else:
@@ -301,8 +307,11 @@ class Shapley():
             results.put(([int(player_id in selected_players)\
                           for player_id in range(self.player_num)], 
                          u, compute_times, t))
-            self.truncation_coaliations.add(
-                ",".join(map(str, sorted(selected_players))))
+            utility_record_idx = str(
+                sorted(selected_players)
+                if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
+                else selected_players)
+            self.truncation_coaliations[utility_record_idx]=u
             return
         u, t1, comp_count = self.utility_computation_call(selected_players)
         compute_times += comp_count
@@ -429,5 +438,10 @@ class Shapley():
             results, full_sample, iter_times = base_comp_func() \
                 if not callable(self.argorithm) \
                 else self.argorithm(self.sampler.sample())
-
+        # print truncation statistics
+        print('length of truncated computations: ', len(self.truncation_coaliations))
+        for key in self.truncation_coaliations.keys():
+            print('coalition %s'%key, 
+                  'coalition_utility/task_total_utility: %s'%(self.truncation_coaliations[key]/self.task_total_utility))
+        # return final results
         return self.output.aggregator.SV, self.output.aggregator.SV_var
