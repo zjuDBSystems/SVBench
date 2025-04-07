@@ -33,7 +33,7 @@ class DSV():
                          num_classes=self.num_classes)
 
         # player setting
-        self.trn_data = torch.load(trn_path)
+        self.trn_data = torch.load(trn_path, weights_only=False)
 
         all_dataIdx = list(range(len(self.trn_data)))
         random.shuffle(all_dataIdx)
@@ -48,7 +48,7 @@ class DSV():
                 self.players[player_idx] = np.random.choice(dataIdxs, 512,
                                                             replace = False)
         '''        
-        self.Tst = torch.load('data/%s0/test.pt' % (dataset))
+        self.Tst = torch.load('data/%s0/test.pt' % (dataset), weights_only=False)
 
     def utility_computation(self, player_list):
         all_data_tuple_idx = []

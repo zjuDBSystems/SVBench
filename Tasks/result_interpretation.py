@@ -56,7 +56,7 @@ class RI():
             data_prepare(manual_seed=manual_seed, dataset=dataset,
                         num_classes=self.num_classes)
 
-        self.Trn = torch.load(trn_path)
+        self.Trn = torch.load(trn_path, weights_only=False)
 
         self.X_train = []
         self.y_train = []
@@ -104,7 +104,7 @@ class RI():
         #     self.players = [feature_idx 
         #                     for feature_idx in range(self.X_test[0].reshape(-1).shape[-1])]
         # else:
-        self.Tst = torch.load('data/%s0/test.pt' % (dataset))
+        self.Tst = torch.load('data/%s0/test.pt' % (dataset), weights_only=False)
         self.complete_Tst_idx = copy.deepcopy(self.Tst.idxs)
         for item in self.Tst:
             data, label = item[0], item[1]
@@ -167,7 +167,7 @@ class RI():
             #     print('Given model accuracy: ', AdultTest(self.model, testData))
             #     return
             # else:
-            self.model = torch.load(model_path, map_location=self.device)
+            self.model = torch.load(model_path, map_location=self.device, weights_only=False)
             testData = self.Tst
             print('Given model accuracy: ',
                 DNNTest(model=self.model, test_data=testData,

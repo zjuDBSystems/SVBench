@@ -36,7 +36,7 @@ class FL():
                          data_allocation=1, num_trainDatasets=10, group_size='10',
                          multiplier=multiplier, data_size_mean=data_size_mean)
 
-        self.Tst = torch.load(tst_path)
+        self.Tst = torch.load(tst_path, weights_only=False)
         self.stored_gradients = dict()
         self.skippable_test_sample = [
             dict([(no, set()) for no in range(self.num_clients)])
@@ -44,7 +44,7 @@ class FL():
 
         # player setting
         self.player_datasets = [
-            torch.load('data/%s1/train%s.pt' % (dataset, no),)
+            torch.load('data/%s1/train%s.pt' % (dataset, no), weights_only=False)
             for no in range(self.num_clients)]
         self.player_data_size = [len(self.player_datasets[no])
                                  for no in range(self.num_clients)]
@@ -70,7 +70,7 @@ class FL():
                         (self.dataset if self.manual_seed == 42
                          else (self.dataset+"-"+str(self.manual_seed))),
                         ridx, player_idx),
-                        map_location=self.device)
+                        map_location=self.device, weights_only=False)
                     self.players[player_idx][ridx] = localUpdates[player_idx]
                     p_k[player_idx] = len(self.player_datasets[player_idx])
 

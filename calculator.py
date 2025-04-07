@@ -34,7 +34,8 @@ class Shapley():
         self.sampler = sampler
         self.output = output
 
-        self.task_total_utility = 0
+        self.task_total_utility = self.utility_function(range(self.player_num))
+        print('task total utility: ', self.task_total_utility)
         self.CP_epsilon = 0.00001
 
         self.truncation_coaliations = dict()
@@ -442,6 +443,6 @@ class Shapley():
         print('length of truncated computations: ', len(self.truncation_coaliations))
         for key in self.truncation_coaliations.keys():
             print('coalition %s'%key, 
-                  'coalition_utility/task_total_utility: %s'%(self.truncation_coaliations[key]/self.task_total_utility))
+                  'coalition_utility/task_total_utility: %s'%np.abs((self.task_total_utility - self.truncation_coaliations[key])/ (self.task_total_utility + 10**(-15))))
         # return final results
         return self.output.aggregator.SV, self.output.aggregator.SV_var
