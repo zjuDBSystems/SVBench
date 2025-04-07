@@ -44,7 +44,7 @@ def para_set(args):
     paras = {'log_file': 'std',
              'utility_record_file': '',
              'optimization_strategy': '',
-             'TC_threshold': 0.01,
+             'TC_threshold': 0.1,
              'conv_check_num': 5,
              'base_algo': 'MC',
              'sampling_strategy': 'random',
