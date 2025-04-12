@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+
 class RegressionModel(nn.Module):
     def __init__(self, num_feature, num_classes):
         super(RegressionModel, self).__init__()
@@ -55,10 +56,13 @@ class NN_ttt(nn.Module):
         self.fc3 = nn.Linear(32, num_classes)
 
     def forward(self, x):
+        ori_len = x.shape[0]
+        if x.shape[0]==1:
+            x = torch.cat((x,x),0)
         x = torch.relu(self.bn1(self.fc1(x)))
         x = torch.relu(self.bn2(self.fc2(x)))
         x = self.fc3(x)  
-        return x
+        return x[:ori_len]
 
 
 class CNN(nn.Module):

@@ -3,6 +3,7 @@ import copy
 import os
 import time
 import sys
+
 from .utils import DNNTrain, DNNTest, find_free_device
 from .nets import CNNCifar, CNN, RegressionModel, NN
 from .data_preparation import data_prepare
