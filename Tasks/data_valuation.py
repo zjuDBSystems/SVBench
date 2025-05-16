@@ -135,21 +135,25 @@ class DV():
             if max_utility < base_overall_utility*0.75:
                 print('Warning: overall utility is not qualified'+\
                       'after reducing the number of training data!')
-            
+            self.model = None
         self.players = self.trn_data
         # exit()
         
     def utility_computation(self, player_list):
-        # server for MIA (no use in the other cases)
+        num_players = len(player_list)
+        # server for MIA experiments (no use in the other cases)
         player_list = [self.trn_data.idxs[pidx]
                        for pidx in player_list]
 
         utility = 0.0
         # model initialize and training
+        initial_flag=False
         if not self.GA or type(self.model) == type(None) or\
-                len(player_list) <= 0:
+        num_players <= 0:
+            initial_flag=True
             if self.GA:
                 print('model initialize...')
+                
             if self.dataset in ['wine', 'bank']:
                 self.model = NN(num_feature=self.num_feature,
                                 num_classes=self.num_classes)
@@ -157,16 +161,18 @@ class DV():
                 self.model = RegressionModel(
                     num_feature=self.num_feature,
                     num_classes=self.num_classes)
-        if len(player_list) <= 0:
+        if num_players <= 0:
             utility = DNNTest(self.model, self.Tst,
                               metric='tst_accuracy')
+            self.model = None
             return utility
 
         loss_func = torch.nn.CrossEntropyLoss()
         if self.GA:
             epoch = 1
             batch_size = 1
-            player_list = player_list[-1:]
+            if not (initial_flag and num_players>1):
+                player_list = player_list[-1:]
         else:
             epoch = self.ep
             batch_size = self.bs
@@ -181,5 +187,10 @@ class DV():
         # model testing (maybe expedited by some ML speedup functions)
         utility = DNNTest(self.model, self.Tst,
                           metric='tst_accuracy')
-
+        
+        if not self.GA:
+            self.model = None # reset model
+        else: 
+            if num_players==len(self.players):
+                self.model = None
         return utility

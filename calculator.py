@@ -440,8 +440,8 @@ class Shapley():
                 else self.argorithm(self.sampler.sample())
         # print truncation statistics
         print('length of truncated computations: ', len(self.truncation_coaliations))
-        for key in self.truncation_coaliations.keys():
-            print('coalition %s'%key, 
-                  'coalition_utility/task_total_utility: %s'%np.abs((self.task_total_utility - self.truncation_coaliations[key])/ (self.task_total_utility + 10**(-15))))
+        #for key in self.truncation_coaliations.keys():
+        #    print('coalition %s'%key, 
+        #          'abs(task_total_utility-coalition_utility)/task_total_utility: %s'%np.abs((self.task_total_utility - self.truncation_coaliations[key])/ (self.task_total_utility + 10**(-15))))
         # return final results
         return self.output.aggregator.SV, self.output.aggregator.SV_var
