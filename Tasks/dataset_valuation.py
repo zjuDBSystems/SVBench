@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch
 import copy
 import random
@@ -45,6 +46,7 @@ class DSV():
         if len(self.players[-1])<len(self.players[-2]):
             self.players[-2] += self.players[-1]
             self.players.pop(-1)
+        print('num_players:',len(self.players))
         '''
         if self.dataset == ('mnist' or 'cifar'):
             for player_idx, dataIdxs in enumerate(self.players):
@@ -117,4 +119,5 @@ class DSV():
         else: 
             if num_players==len(self.players):
                 self.model = None
+                print('reset model for next round of GA...')
         return utility

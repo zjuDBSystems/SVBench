@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 import sys, os
-from collections import namedtuple
+#from collections import namedtuple
 
 OUT_PRINT_FLUSH_INTERVAL = 5
 UTILITY_RECORD_FILEWRITE_INTERVAL = 100

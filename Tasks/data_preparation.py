@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch
 import random
 import os
@@ -9,10 +10,8 @@ from sklearn.datasets import load_iris, load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from torch.utils.data import Dataset
-from sklearn.impute import SimpleImputer
 from ucimlrepo import fetch_ucirepo 
 import openml
-from sklearn.decomposition import PCA
 
 class ImageDataset(Dataset):
     def __init__(self, dataset, labels, original_len, idxs, attacker=False,
