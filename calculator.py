@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# For paper: A Comprehensive Study of Shapley Value in Data Analytics
 import time
 import threading
 import queue
@@ -88,7 +89,7 @@ class Shapley():
             self.truncation_coaliations[utility_record_idx]=bef_utility
             self.utility_records[utility_record_idx] = (bef_utility, 0)
             
-        if utility_record_idx in self.utility_record_idx.key():
+        if utility_record_idx in self.utility_records.keys():
             comp_count = 0
             return self.utility_records[utility_record_idx][0], \
                    self.utility_records[utility_record_idx][1], comp_count

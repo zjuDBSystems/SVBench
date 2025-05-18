@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# For paper: A Comprehensive Study of Shapley Value in Data Analytics
 import random
 import math
 import numpy as np

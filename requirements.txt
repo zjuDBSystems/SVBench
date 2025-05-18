@@ -36,3 +36,4 @@ typing_extensions==4.12.2
 tzdata==2024.2
 certifi==2024.12.14
 ucimlrepo==0.0.7
+
