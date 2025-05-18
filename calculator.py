@@ -85,52 +85,38 @@ class Shapley():
             sorted(player_list)
             if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
             else player_list)
+        # if utility_record_idx has been actually computed before
+        # not use truncation results
+        if bef_utility!=None and \
+        utility_record_idx not in self.scanned_coalition:
+            self.scanned_coalition.add(utility_record_idx)
+            self.truncation_coaliations[utility_record_idx]=bef_utility
+        if utility_record_idx in self.truncation_coaliations.keys():
+            return self.truncation_coaliations[utility_record_idx], 0, 0
         
-        if utility_record_idx in self.scanned_coalition:
-            comp_count = 0
-        else:
-            self.scanned_coalition.add(utility_record_idx)
-            if bef_utility!=None:
-                comp_count = 0
-                self.truncation_coaliations[utility_record_idx]=bef_utility
-                self.utility_records[utility_record_idx] = (bef_utility, 0)
-            else:
-                comp_count = 1
-                start_time = time.time()
-                utility = self.utility_function(player_list)
-                time_cost = time.time() - start_time
-                if utility_record_idx not in self.utility_records.keys():
-                    with self.utility_record_write_lock:
-                        self.utility_records[utility_record_idx] = (utility, time_cost)
-                        self.dirty_utility_record_num += 1
-                self.write_utility_record()
-                
-        return self.utility_records[utility_record_idx][0], \
-               self.utility_records[utility_record_idx][1], comp_count
-        '''
-        if utility_record_idx in self.scanned_coalition:
-            comp_count = 0
-        else:
-            comp_count = 1
-            self.scanned_coalition.add(utility_record_idx)
+        ori_comp_count = len(self.scanned_coalition)
+        self.scanned_coalition.add(utility_record_idx)
+        new_comp_count = len(self.scanned_coalition)
             
         if utility_record_idx in self.utility_records:
+            # while True and comp_count, utility_records are computed beforehand
             return self.utility_records[utility_record_idx][0], \
-                   self.utility_records[utility_record_idx][1], comp_count
-
+                   self.utility_records[utility_record_idx][1], \
+                   new_comp_count - ori_comp_count
         start_time = time.time()
         utility = self.utility_function(player_list)
         time_cost = time.time() - start_time
-
+        # check again when using multi-threads
         if utility_record_idx not in self.utility_records.keys():
             with self.utility_record_write_lock:
+                # utility records should be actual computation results
+                # without any optimization
+                # and require to be usable for different algorithms
                 self.utility_records[utility_record_idx] = (utility, time_cost)
                 self.dirty_utility_record_num += 1
         self.write_utility_record()
-        
-        return utility, time_cost, comp_count
-        '''
-        
+        return utility, time_cost, new_comp_count - ori_comp_count    
+            
     def read_history_utility_record(self):
         self.utility_record_file = './Tasks/utility_records/'+\
             f'{self.task}_{self.dataset}_{self.manual_seed}{"_GA" if self.GA else ""}{"_TSS" if self.TSS else ""}.json' \
@@ -355,10 +341,9 @@ class Shapley():
             '''
         else:
             u, t1, comp_count = self.utility_computation_call(selected_players)
-            compute_times += comp_count
             results.put(([int(player_id in selected_players)\
                           for player_id in range(self.player_num)], 
-                         u, compute_times, t+t1))
+                         u, compute_times+comp_count, t+t1))
 
     def GT(self, **kwargs):
         Z = 2 * sum([1/k for k in range(1, self.player_num)])
