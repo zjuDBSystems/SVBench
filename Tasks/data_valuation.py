@@ -194,4 +194,5 @@ class DV():
         else: 
             if num_players==len(self.players):
                 self.model = None
+                print('reset model for next round of GA...')
         return utility

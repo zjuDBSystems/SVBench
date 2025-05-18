@@ -41,7 +41,6 @@ class Shapley():
         self.truncation_coaliations = dict()
         self.threads = []
 
-        self.scanned_coalition = set()
         self.utility_record_file = utility_record_file
         self.utility_records = self.read_history_utility_record()
         if self.utility_records is None:
@@ -79,32 +78,31 @@ class Shapley():
                 thread.join()
             self.threads = []
 
-    def utility_computation_call(self, player_list):
+    def utility_computation_call(self, player_list, bef_utility=None):
         utility_record_idx = str(
             sorted(player_list)
             if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
             else player_list)
         
-        if utility_record_idx in self.scanned_coalition:
-            comp_count = 0
-        else:
-            comp_count = 1
-            self.scanned_coalition.add(utility_record_idx)
+        if bef_utility!=None:
+            self.truncation_coaliations[utility_record_idx]=bef_utility
+            self.utility_records[utility_record_idx] = (bef_utility, 0)
             
-        if utility_record_idx in self.utility_records:
+        if utility_record_idx in self.utility_record_idx.key():
+            comp_count = 0
             return self.utility_records[utility_record_idx][0], \
                    self.utility_records[utility_record_idx][1], comp_count
 
-        start_time = time.time()
-        utility = self.utility_function(player_list)
-        time_cost = time.time() - start_time
-
-        if utility_record_idx not in self.utility_records.keys():
+        else:
+            start_time = time.time()
+            utility = self.utility_function(player_list)
+            time_cost = time.time() - start_time
             with self.utility_record_write_lock:
                 self.utility_records[utility_record_idx] = (utility, time_cost)
                 self.dirty_utility_record_num += 1
-        self.write_utility_record()
-        
+            self.write_utility_record()
+            comp_count = 1
+            
         return utility, time_cost, comp_count
 
     def read_history_utility_record(self):
@@ -166,11 +164,8 @@ class Shapley():
         
         if self.if_truncation(bef_addition):
             aft_addition = bef_addition
-            utility_record_idx = str(
-                sorted(permutation[:order+1])
-                if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
-                else permutation[:order+1])
-            self.truncation_coaliations[utility_record_idx]=bef_addition
+            self.utility_computation_call(
+                permutation[:order+1], bef_utility=bef_addition)
         else:
             # utility after adding the targeted player
             aft_addition, time_cost1, comp_count = self.utility_computation_call(
@@ -216,13 +211,9 @@ class Shapley():
                                 results):
         if self.if_truncation(bef_addition):
             aft_addition = bef_addition
-            utility_record_idx = str(
-                sorted(list(subset)+[player_id])
-                if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
-                else list(subset)+[player_id])
-            self.truncation_coaliations[utility_record_idx]=bef_addition
-            comp_times = 0
-            time_cost1 = 0
+            self.utility_computation_call(
+                list(subset)+[player_id], bef_utility=bef_addition)
+            
         else:
             # utility after adding the targeted player
             aft_addition, time_cost1, comp_count = self.utility_computation_call(
@@ -305,20 +296,17 @@ class Shapley():
         u, t, comp_count = self.utility_computation_call(selected_players[:-1])
         compute_times = comp_count
         if self.if_truncation(u):
+            self.utility_computation_call(
+                selected_players, bef_utility=u)
             results.put(([int(player_id in selected_players)\
                           for player_id in range(self.player_num)], 
                          u, compute_times, t))
-            utility_record_idx = str(
-                sorted(selected_players)
-                if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
-                else selected_players)
-            self.truncation_coaliations[utility_record_idx]=u
-            return
-        u, t1, comp_count = self.utility_computation_call(selected_players)
-        compute_times += comp_count
-        results.put(([int(player_id in selected_players)\
-                      for player_id in range(self.player_num)], 
-                     u, compute_times, t+t1))
+        else:
+            u, t1, comp_count = self.utility_computation_call(selected_players)
+            compute_times += comp_count
+            results.put(([int(player_id in selected_players)\
+                          for player_id in range(self.player_num)], 
+                         u, compute_times, t+t1))
 
     def GT(self, **kwargs):
         Z = 2 * sum([1/k for k in range(1, self.player_num)])
