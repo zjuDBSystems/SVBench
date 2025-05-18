@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# For paper: A Comprehensive Study of Shapley Value in Data Analytics
+# For VLDB2025 paper: A Comprehensive Study of Shapley Value in Data Analytics
 import time
 import sys
 from Tasks import data_valuation, federated_learning, result_interpretation, dataset_valuation

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# For paper: A Comprehensive Study of Shapley Value in Data Analytics
+# For VLDB2025 paper: A Comprehensive Study of Shapley Value in Data Analytics
 import random
 import math
 import numpy as np
@@ -37,6 +37,7 @@ class Sampler():
         if self.sampling == 'random':
             permutation = self.generateRandomPermutation()
         elif self.sampling == 'antithetic':
+            last = self.permutations[-1]
             permutation = self.generateRandomPermutation() if self.sampling_times % 2 == 1  \
                 else list(reversed(last))
         elif self.sampling == 'stratified':

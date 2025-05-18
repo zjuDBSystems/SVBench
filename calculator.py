@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# For paper: A Comprehensive Study of Shapley Value in Data Analytics
+# For VLDB2025 paper: A Comprehensive Study of Shapley Value in Data Analytics
 import time
 import threading
 import queue
@@ -42,6 +42,7 @@ class Shapley():
         self.truncation_coaliations = dict()
         self.threads = []
 
+        self.scanned_coalition = set()
         self.utility_record_file = utility_record_file
         self.utility_records = self.read_history_utility_record()
         if self.utility_records is None:
@@ -85,27 +86,51 @@ class Shapley():
             if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
             else player_list)
         
-        if bef_utility!=None:
-            self.truncation_coaliations[utility_record_idx]=bef_utility
-            self.utility_records[utility_record_idx] = (bef_utility, 0)
-            
-        if utility_record_idx in self.utility_records.keys():
+        if utility_record_idx in self.scanned_coalition:
             comp_count = 0
+        else:
+            self.scanned_coalition.add(utility_record_idx)
+            if bef_utility!=None:
+                comp_count = 0
+                self.truncation_coaliations[utility_record_idx]=bef_utility
+                self.utility_records[utility_record_idx] = (bef_utility, 0)
+            else:
+                comp_count = 1
+                start_time = time.time()
+                utility = self.utility_function(player_list)
+                time_cost = time.time() - start_time
+                if utility_record_idx not in self.utility_records.keys():
+                    with self.utility_record_write_lock:
+                        self.utility_records[utility_record_idx] = (utility, time_cost)
+                        self.dirty_utility_record_num += 1
+                self.write_utility_record()
+                
+        return self.utility_records[utility_record_idx][0], \
+               self.utility_records[utility_record_idx][1], comp_count
+        '''
+        if utility_record_idx in self.scanned_coalition:
+            comp_count = 0
+        else:
+            comp_count = 1
+            self.scanned_coalition.add(utility_record_idx)
+            
+        if utility_record_idx in self.utility_records:
             return self.utility_records[utility_record_idx][0], \
                    self.utility_records[utility_record_idx][1], comp_count
 
-        else:
-            start_time = time.time()
-            utility = self.utility_function(player_list)
-            time_cost = time.time() - start_time
+        start_time = time.time()
+        utility = self.utility_function(player_list)
+        time_cost = time.time() - start_time
+
+        if utility_record_idx not in self.utility_records.keys():
             with self.utility_record_write_lock:
                 self.utility_records[utility_record_idx] = (utility, time_cost)
                 self.dirty_utility_record_num += 1
-            self.write_utility_record()
-            comp_count = 1
-            
+        self.write_utility_record()
+        
         return utility, time_cost, comp_count
-
+        '''
+        
     def read_history_utility_record(self):
         self.utility_record_file = './Tasks/utility_records/'+\
             f'{self.task}_{self.dataset}_{self.manual_seed}{"_GA" if self.GA else ""}{"_TSS" if self.TSS else ""}.json' \
@@ -166,7 +191,14 @@ class Shapley():
         if self.if_truncation(bef_addition):
             aft_addition = bef_addition
             self.utility_computation_call(
-                permutation[:order+1], bef_utility=bef_addition)
+                permutation[:order+1], bef_utility = bef_addition)
+            '''
+            utility_record_idx = str(
+                sorted(permutation[:order+1])
+                if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
+                else permutation[:order+1])
+            self.truncation_coaliations[utility_record_idx]=bef_addition
+            '''
         else:
             # utility after adding the targeted player
             aft_addition, time_cost1, comp_count = self.utility_computation_call(
@@ -186,6 +218,8 @@ class Shapley():
             return results, True, iter_times
 
         print('\n Monte Carlo iteration %s: ' % iter_times, permutation)
+        print('Current scanned_coalition:', len(self.scanned_coalition),
+              'Current truncation:', len(self.truncation_coaliations))
         if self.parallel_threads_num == 1:
             for idx, player_id in enumerate(permutation):
                 self.MC_CP_parallelable_thread(
@@ -212,9 +246,17 @@ class Shapley():
                                 results):
         if self.if_truncation(bef_addition):
             aft_addition = bef_addition
+            '''
+            utility_record_idx = str(
+                sorted(list(subset)+[player_id])
+                if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
+                else list(subset)+[player_id])
+            self.truncation_coaliations[utility_record_idx]=bef_addition
+            '''
             self.utility_computation_call(
-                list(subset)+[player_id], bef_utility=bef_addition)
-            
+                list(subset)+[player_id], bef_utility = bef_addition)
+            comp_times = 0
+            time_cost1 = 0
         else:
             # utility after adding the targeted player
             aft_addition, time_cost1, comp_count = self.utility_computation_call(
@@ -246,6 +288,8 @@ class Shapley():
         q = np.random.rand()
         MLE_M=2
         print(f'MLE iteration(with probability_{q}) start!')
+        print('Current scanned_coalition:', len(self.scanned_coalition),
+              'Current truncation:', len(self.truncation_coaliations))
         compute_times = 0
         #m = -1 # m represent the number of sampling occured in the current round
         # call aggregate after computing utility for
@@ -298,10 +342,17 @@ class Shapley():
         compute_times = comp_count
         if self.if_truncation(u):
             self.utility_computation_call(
-                selected_players, bef_utility=u)
+                selected_players, bef_utility = u)
             results.put(([int(player_id in selected_players)\
                           for player_id in range(self.player_num)], 
                          u, compute_times, t))
+            '''
+            utility_record_idx = str(
+                sorted(selected_players)
+                if (self.task != 'DV' and self.task != 'DSV') or (not self.GA)
+                else selected_players)
+            self.truncation_coaliations[utility_record_idx]=u
+            '''
         else:
             u, t1, comp_count = self.utility_computation_call(selected_players)
             compute_times += comp_count
@@ -335,6 +386,8 @@ class Shapley():
             # are satisfied simultaneously
             # we do not proceed to the following operations 
             return results, True, iter_times
+        print('Current scanned_coalition:', len(self.scanned_coalition),
+              'Current truncation:', len(self.truncation_coaliations))
         
         if self.parallel_threads_num == 1:
             for order, selected_players in enumerate(selected_coalitions):
@@ -360,6 +413,8 @@ class Shapley():
             return phi_t, True, iter_times
         print('\n Compressive permutation sampling iteration %s: ' %
               iter_times, permutation)
+        print('Current scanned_coalition:', len(self.scanned_coalition),
+              'Current truncation:', len(self.truncation_coaliations))
         if self.parallel_threads_num == 1:
             for order, player_id in enumerate(permutation):
                 self.MC_CP_parallelable_thread(
@@ -380,6 +435,8 @@ class Shapley():
 
     def RE(self, **kwargs):
         results = queue.Queue()
+        print('Current scanned_coalition:', len(self.scanned_coalition),
+              'Current truncation:', len(self.truncation_coaliations))
         permutation, full_sample, iter_times = self.sampler.sample()
         if full_sample:
             # flush all existing utility records to the record file when full sampling
@@ -428,8 +485,10 @@ class Shapley():
             results, full_sample, iter_times = base_comp_func() \
                 if not callable(self.argorithm) \
                 else self.argorithm(self.sampler.sample())
+        print('length of scanned coalitions: ', len(self.scanned_coalition))
         # print truncation statistics
         print('length of truncated computations: ', len(self.truncation_coaliations))
+        print('truncated coalitions: ', self.truncation_coaliations.keys())
         #for key in self.truncation_coaliations.keys():
         #    print('coalition %s'%key, 
         #          'abs(task_total_utility-coalition_utility)/task_total_utility: %s'%np.abs((self.task_total_utility - self.truncation_coaliations[key])/ (self.task_total_utility + 10**(-15))))
