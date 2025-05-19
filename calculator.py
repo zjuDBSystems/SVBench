@@ -198,9 +198,10 @@ class Shapley():
         permutation, full_sample, iter_times = self.sampler.sample()
         results = queue.Queue()
         if full_sample:
-            # flush all existing utility records to the record file when full sampling
-            self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
-            self.write_utility_record()
+            if self.dirty_utility_record_num>0:
+                # flush all existing utility records to the record file when full sampling
+                self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+                self.write_utility_record()
             return results, True, iter_times
 
         print('\n Monte Carlo iteration %s: ' % iter_times, permutation)
@@ -287,9 +288,10 @@ class Shapley():
             I_mq, full_sample, iter_times = self.sampler.sample(
                 q=q, I_mq=I_mq, m=m)
             if full_sample:
-                # flush all existing utility records to the record file when full sampling
-                self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
-                self.write_utility_record()
+                if self.dirty_utility_record_num>0:
+                    # flush all existing utility records to the record file when full sampling
+                    self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+                    self.write_utility_record()
                 return results, True, iter_times
             subset = [player_id_
                       for player_id_ in range(self.player_num)
@@ -365,8 +367,9 @@ class Shapley():
         
         if full_sample and len(selected_coalitions) ==0:
             # flush all existing utility records to the record file when full sampling
-            self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
-            self.write_utility_record()
+            if self.dirty_utility_record_num>0:
+                self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+                self.write_utility_record()
             # only when full_sample=True and len(selected_coalitions) ==0 
             # are satisfied simultaneously
             # we do not proceed to the following operations 
@@ -392,9 +395,10 @@ class Shapley():
         phi_t = queue.Queue()
         permutation, full_sample, iter_times = self.sampler.sample()
         if full_sample:
-            # flush all existing utility records to the record file when full sampling
-            self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
-            self.write_utility_record()
+            if self.dirty_utility_record_num>0:
+                # flush all existing utility records to the record file when full sampling
+                self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+                self.write_utility_record()
             return phi_t, True, iter_times
         print('\n Compressive permutation sampling iteration %s: ' %
               iter_times, permutation)
@@ -424,9 +428,10 @@ class Shapley():
               'Current truncation:', len(self.truncation_coaliations))
         permutation, full_sample, iter_times = self.sampler.sample()
         if full_sample:
-            # flush all existing utility records to the record file when full sampling
-            self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
-            self.write_utility_record()
+            if self.dirty_utility_record_num>0:
+                # flush all existing utility records to the record file when full sampling
+                self.dirty_utility_record_num = 1+UTILITY_RECORD_FILEWRITE_INTERVAL 
+                self.write_utility_record()
             return results, True, iter_times
         
         if self.parallel_threads_num == 1:
