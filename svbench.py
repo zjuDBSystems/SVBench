@@ -111,12 +111,6 @@ class SVBench():
         print('Total number of players: ', self.player_num)
         print('Total number of utility computations: ',
               '%e' % (2**self.player_num))
-        '''
-        print('(coalition sampling) Total number of utility computations: ',
-              '%e' % (2*self.player_num * 2**(self.player_num-1)))
-        print('(permutation sampling) Total number of utility computations:',
-              '%e' % (2*self.player_num * math.factorial(self.player_num)))
-        '''
         utility_computation_timecost = dict()
         for player_idx in range(self.player_num):
             start_time = time.time()

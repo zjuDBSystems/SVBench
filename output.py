@@ -55,7 +55,6 @@ class Output():
             f"Average time cost of utility computation: {time_cost/utility_comp_times}")
         return True
 
-
 class Aggregator():
     def __init__(self, algo, player_num):
         self.algo = algo
@@ -101,7 +100,7 @@ class Aggregator():
             self.A_CP = 1 / np.sqrt(self.num_measurement) * \
                 (2 * np.random.binomial(
                     1, 0.5, size=(self.num_measurement, self.player_num)) - 1)
-            self.CP_epsilon = 0.05
+            self.CP_epsilon = 0.00001#0.05
 
     def aggregate(self, results, task_total_utility, task_emptySet_utility):
         if self.algo == 'MC':

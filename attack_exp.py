@@ -718,7 +718,6 @@ def FIA_noAttackModelTrain(SV_args, random_mode='auxilliary'):
             RI.Tst.idxs = RI.complete_Tst_idx[test_idx:test_idx+1]
             print('\n test sample data: ', RI.Tst.dataset[test_idx],
                   '\n test sample label: ', RI.Tst.labels[test_idx])
-            
             SV, SV_var = sv_calc(
                 task = f'RI_{SV_args.dataset}_Idx{str(hash(str(RI.Tst.dataset[test_idx])))}',
                 dataset = SV_args.dataset,

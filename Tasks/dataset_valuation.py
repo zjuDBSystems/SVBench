@@ -4,7 +4,6 @@ import torch
 import copy
 import random
 import os
-
 from .data_preparation import data_prepare
 from .nets import RegressionModel, NN, CNNCifar, CNN
 from .utils import DNNTrain, DNNTest

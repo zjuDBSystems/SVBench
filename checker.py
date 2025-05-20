@@ -25,8 +25,7 @@ class Checker():
                                (latest_SV if latest_SV != 0 else 10**(-12)))
 
         convergence_diff = sum_/(count if count > 0 else 10**(-12))
-        print("Current average convergence_diff (count %s): " % count,
-              convergence_diff)
+        print("Current average convergence_diff (count %s): " % count, convergence_diff)
         if checker_mode == 'comp_count':
             num_players = len(SVs_var)
             if utility_comp_times >= 2**num_players and \

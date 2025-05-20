@@ -77,7 +77,6 @@ def para_set(args):
     args.update({key: value for key, value in paras.items() if key not in args})
     return 0
 
-
 def open_log_file(log_file):
     if log_file != 'std':
         if not os.path.exists(log_file):
@@ -92,7 +91,6 @@ def open_log_file(log_file):
             print(f"ERROR: Open log file error:\n{e}")
             return -1
     return 0
-
 
 def config(args):
     if para_set(args) == -1:

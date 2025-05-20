@@ -6,7 +6,6 @@ import os
 import copy
 import torch
 import pandas as pd
-
 from functools import reduce
 from .data_preparation import data_prepare
 from .nets import NN, RegressionModel
